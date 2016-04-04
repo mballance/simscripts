@@ -35,10 +35,11 @@ else
     echo "Error: Failed to disambiguate runtest.pl"
   else
     SIMSCRIPTS_DIR=`dirname $runtest`
-    SIMSCRIPTS_DIR=`dirname $SIMSCRIPTS_DIR`
+    export SIMSCRIPTS_DIR=`dirname $SIMSCRIPTS_DIR`
     echo "SIMSCRIPTS_DIR=$SIMSCRIPTS_DIR"
     # TODO: check whether the PATH already contains the in directory
     PATH=${SIMSCRIPTS_DIR}/bin:$PATH
+
 
     # Environment-specific variables
     if test -f $SIMSCRIPTS_DIR/../env/env.sh; then

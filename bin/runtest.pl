@@ -26,17 +26,15 @@ if ($sysname =~ /CYGWIN/) {
 
 $ENV{SIM_DIR}=$SIM_DIR;
 
-# common variables with set_env.sh
-$ENV{COMMON_DIR} = "$SOCBLOX/common";
+# if (! -d $ROOTDIR) {
+#	print "ERROR: Failed to locate root directory\n";
+#	exit 1;
+# }
 
-if (! -d $ROOTDIR) {
-	print "ERROR: Failed to locate root directory\n";
-	exit 1;
-}
-
-if (! -f "${ROOTDIR}/common/common_defs.mk") {
-  print "[ERROR] runtest must be executed in the 'sim' directory\n";
+if (! -f "$ENV{SIMSCRIPTS_DIR}/mkfiles/common_defs.mk") {
+  print "[ERROR] simscripts environment incorrectly setup\n";
   print "Working directory is: ${SIM_DIR}\n";
+  print "SIMSCRIPTS_DIR: $ENV{SIMSCRIPTS_DIR}\n";
   exit 1
 }
 
