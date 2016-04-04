@@ -2,6 +2,7 @@
 #* simscripts set_env.csh
 #****************************************************************************
 
+# Small modification
 set rootdir=`pwd`
 
 while test "x$rootdir" != "x"; do
