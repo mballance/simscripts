@@ -8,6 +8,7 @@
 #export LD_LIBRARY_PATH
 #CXXFLAGS += -I$(QUESTA_HOME)/include -I$(QUESTA_HOME)/include/systemc
 
+ifneq (1,$(RULES))
 
 ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
@@ -75,12 +76,12 @@ REDIRECT:= >/dev/null 2>&1
 else
 endif
 
-build : vlog_build $(LIB_TARGETS) $(TESTBENCH_OBJS) target_build
+BUILD_TARGETS += vlog_build
 
-.phony: vopt vopt_opt vopt_dbg vopt_compile
-vlog_build : vopt
+else # Rules
 
-vopt : vopt_opt vopt_dbg
+.phony: vopt_opt vopt_dbg vopt_compile
+vlog_build : vopt_opt vopt_dbg
 
 vopt_opt : vopt_compile
 	$(Q)vopt -o $(TB)_opt $(TB) +cover $(REDIRECT)
@@ -95,12 +96,6 @@ vopt_compile :
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS)
 
-#$(BUILD_DIR)/libs/tb_dpi.so : $(TESTBENCH_OBJS) $(BFM_LIBS) $(LIBSVF)
-#	if test ! -d $(BUILD_DIR)/libs; then mkdir -p $(BUILD_DIR)/libs; fi
-#	$(CXX) -o $@ -shared $(filter %.o, $^) \
-#		$(foreach l,$(filter %.so, $^), -L$(dir $(l)) -l$(subst lib,,$(basename $(notdir $(l))))) \
-#		$(LIBSVF_LINK)
-		
 #********************************************************************
 #* Simulation settings
 #********************************************************************
@@ -124,9 +119,10 @@ run :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
-	$(Q)vmap work $(BUILD_DIR)/work $(REDIRECT)
+	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 #	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -coverage -l simx.log \
 #		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 	$(Q)vsim $(VSIM_FLAGS) -do run.do $(TOP) -coverage -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 
+endif

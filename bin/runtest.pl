@@ -19,12 +19,14 @@ $ROOTDIR=dirname($COMMON_DIR);
 ($sysname,$nodename,$release,$version,$machine) = POSIX::uname();
 
 $SIM_DIR=getcwd();
+$SIM_DIR_A=$SIM_DIR;
 
 if ($sysname =~ /CYGWIN/) {
-	$SIM_DIR =~ s%^/cygdrive/([a-zA-Z])%$1:%;
+	$SIM_DIR_A =~ s%^/cygdrive/([a-zA-Z])%$1:%;
 }
 
 $ENV{SIM_DIR}=$SIM_DIR;
+$ENV{SIM_DIR_A}=$SIM_DIR_A;
 
 # if (! -d $ROOTDIR) {
 #	print "ERROR: Failed to locate root directory\n";
@@ -150,11 +152,14 @@ if ($builddir eq "") {
 # TODO: platform too?
 $builddir = $builddir . "/" . $sim;
 
+
+$ENV{BUILD_DIR}=$builddir;
+
 if ($sysname =~ /CYGWIN/) {
 	$builddir =~ s%^/cygdrive/([a-zA-Z])%$1:%;
 }
 
-$ENV{BUILD_DIR}=$builddir;
+$ENV{BUILD_DIR_A}=$builddir;
 
 print "cmd=$cmd\n";
 
@@ -531,11 +536,11 @@ sub run_jobs {
 					open(my $fh, "> ${run_dir}/sim.f");
 					
 	                if (-f "${SIM_DIR}/${test}") {
-	                	print $fh "-f \${SIM_DIR}/${test}\n";
+	                	print $fh "-f \${SIM_DIR_A}/${test}\n";
 	                } elsif (-f "${SIM_DIR}/tests/${test}") {
-	                	print $fh "-f \${SIM_DIR}/tests/${test}\n";
+	                	print $fh "-f \${SIM_DIR_A}/tests/${test}\n";
 	                } elsif (-f "${SIM_DIR}/tests/${testname}.f") {
-	                	print $fh "-f \${SIM_DIR}/tests/${test}.f\n";
+	                	print $fh "-f \${SIM_DIR_A}/tests/${test}.f\n";
 	                }
                 
 	                close($fh);
