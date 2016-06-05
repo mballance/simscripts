@@ -10,6 +10,7 @@
 
 ifneq (1,$(RULES))
 
+
 ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
@@ -80,14 +81,16 @@ BUILD_TARGETS += vlog_build
 
 else # Rules
 
+# VOPT_FLAGS += +cover
+
 .phony: vopt_opt vopt_dbg vopt_compile
 vlog_build : vopt_opt vopt_dbg
 
 vopt_opt : vopt_compile
-	$(Q)vopt -o $(TB)_opt $(TB) +cover $(REDIRECT)
+	$(Q)vopt -o $(TB)_opt $(TB) $(VOPT_FLAGS) $(REDIRECT) 
 
 vopt_dbg : vopt_compile
-	$(Q)vopt +acc -o $(TB)_dbg $(TB) +cover $(REDIRECT)
+	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
 
 vopt_compile :
 	$(Q)rm -rf work
@@ -122,7 +125,7 @@ run :
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 #	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -coverage -l simx.log \
 #		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
-	$(Q)vsim $(VSIM_FLAGS) -do run.do $(TOP) -coverage -l simx.log \
+	$(Q)vsim $(VSIM_FLAGS) -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 
 endif

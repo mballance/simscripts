@@ -1,7 +1,20 @@
 
+include $(SIMSCRIPTS_DIR)/mkfiles/plusargs.mk
+
 TOP_MODULE ?= $(TB)
 DEBUG ?= false
+
+# Timeout selection
+# - Test-specific timeout
+# - Project-specific timeout
+# - 1ms
+TEST_TIMEOUT := $(call get_plusarg,TIMEOUT,$(PLUSARGS))
+
+ifneq (,$(TEST_TIMEOUT))
+TIMEOUT := $(TEST_TIMEOUT)
+else
 TIMEOUT ?= 1ms
+endif
 
 COMMON_SIM_MK := $(lastword $(MAKEFILE_LIST))
 COMMON_SIM_MK_DIR := $(dir $(COMMON_SIM_MK))
