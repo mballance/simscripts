@@ -42,9 +42,11 @@ else
 
 
     # Environment-specific variables
+	export SIMSCRIPTS_PROJECT_ENV=true
     if test -f $SIMSCRIPTS_DIR/../env/env.sh; then
         . $SIMSCRIPTS_DIR/../env/env.sh
     fi
+    unset SIMSCRIPTS_PROJECT_ENV
   fi
 fi
 
