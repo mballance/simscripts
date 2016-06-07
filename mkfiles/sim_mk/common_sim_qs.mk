@@ -125,7 +125,7 @@ run :
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 #	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -coverage -l simx.log \
 #		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
-	$(Q)vsim $(VSIM_FLAGS) -do run.do $(TOP) -l simx.log \
+	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 
 endif
