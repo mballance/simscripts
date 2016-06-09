@@ -1,16 +1,16 @@
+#****************************************************************************
+#* common_sim_qs.mk
+#*
+#* Build and run definitions and rules for Questa Sim
+#****************************************************************************
 
 #********************************************************************
 #* Compile rules
 #********************************************************************
-# LIB_TARGETS += $(BUILD_DIR)/libs/tb_dpi.so
-
-#LD_LIBRARY_PATH := $(SVF_LIBDIR)/dpi:$(LD_LIBRARY_PATH)
-#export LD_LIBRARY_PATH
-#CXXFLAGS += -I$(QUESTA_HOME)/include -I$(QUESTA_HOME)/include/systemc
 
 ifneq (1,$(RULES))
 
-
+# Take QUESTA_HOME if set. Otherwise, probe from where executables are located
 ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
@@ -48,7 +48,8 @@ else
 GCC_INSTALL := $(QUESTA_HOME)/gcc-$(GCC_VERSION)-linux
 endif
 
-endif
+endif # End Not Cygwin
+
 CC:=$(GCC_INSTALL)/bin/gcc
 CXX:=$(GCC_INSTALL)/bin/g++
 
@@ -83,16 +84,19 @@ else # Rules
 
 # VOPT_FLAGS += +cover
 
-.phony: vopt_opt vopt_dbg vopt_compile
+.phony: vopt_opt vopt_dbg vlog_compile
 vlog_build : vopt_opt vopt_dbg
 
-vopt_opt : vopt_compile
+VOPT_OPT_DEPS += vlog_compile
+VOPT_DBG_DEPS += vlog_compile
+
+vopt_opt : $(VOPT_OPT_DEPS)
 	$(Q)vopt -o $(TB)_opt $(TB) $(VOPT_FLAGS) $(REDIRECT) 
 
-vopt_dbg : vopt_compile
+vopt_dbg : $(VOPT_DBG_DEPS)
 	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
 
-vopt_compile :
+vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)rm -rf work
 	$(Q)vlib work
 	$(Q)vlog -sv \

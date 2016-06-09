@@ -40,6 +40,7 @@ if (! -f "$ENV{SIMSCRIPTS_DIR}/mkfiles/common_defs.mk") {
   exit 1
 }
 
+
 $test="";
 @testlist;
 $count=1;
@@ -50,10 +51,23 @@ $build=1;
 $cmd="";
 $quiet="";
 $interactive=0;
-$debug="false";
+$debug="";
 $builddir="";
-$sim="qs";
+$sim="";
 $plusargs="";
+
+if ( -f ".simscripts") {
+	print ("Note: loading defaults from .simscripts\n");
+	load_defaults(".simscripts");
+}
+
+if ($sim eq "") {
+	$sim = "qs";
+}
+
+if ($debug eq "") {
+	$debug = "false";
+}
 
 # Global PID list
 @pid_list;
@@ -237,6 +251,39 @@ sub process_testlist($) {
 	}
 	
 	close($fh);
+}
+
+sub load_defaults {
+	my($dflt_file) = @_;
+	
+	open(my $fh, "<", $dflt_file) or 
+	  die "Failed to open defaults file $dflt_file";
+
+	while (my $line = <$fh>) {
+		chomp $line;
+		# Remove comments
+		$line =~ s%#.*$%%g;
+		$line =~ s/\s//g;
+		
+		unless ($line eq "") {
+			$var = $line;
+			$var =~ s/(\w+)=.*$/$1/;
+			$val = $line;
+			$val =~ s/.*=(\w+)$/$1/;
+		
+			if ($var eq "sim") {
+				$sim = $val;
+			} elsif ($var eq "quiet") {
+				$quiet = $val;
+			} elsif ($var eq "debug") {
+				$debug = $val;
+			} else {
+				print "Warning: unrecognized defaults variable $var\n";
+			}
+		}
+	}
+	
+	close($fh);	
 }
 
 sub process_argfile {
