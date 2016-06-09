@@ -110,11 +110,21 @@ vopt_compile :
 #endif
 #	vsim -c -do run.do $(TOP) -qwavedb=+signal \
 
-ifeq (true,$(DYNLINK))
+ifneq (,$(DPI_OBJS_LIBS))
+DPI_LIBRARIES += $(BUILD_DIR_A)/dpi.dll
+LIB_TARGETS := $(BUILD_DIR_A)/dpi.dll
+
+$(BUILD_DIR_A)/dpi.dll : $(DPI_OBJS_LIBS)
+	echo "dpi.dll"
+	exit 1
+endif
+
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
+
+ifeq (true,$(DYNLINK))
 else
 # DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-dpilib $(dpi)$(DPIEXT))
-DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
+# DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
 endif
 
 
