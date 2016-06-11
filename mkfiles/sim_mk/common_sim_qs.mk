@@ -85,6 +85,10 @@ DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
 LIB_TARGETS += $(BUILD_DIR_A)/dpi.dll
 endif
 
+ifeq ($(OS),Windows)
+DPI_SYSLIBS += -lpsapi -lkernel32
+endif
+
 else # Rules
 
 # VOPT_FLAGS += +cover
@@ -121,7 +125,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 
 ifneq (,$(DPI_OBJS_LIBS))
 $(BUILD_DIR_A)/dpi.dll : $(DPI_OBJS_LIBS)
-	$(Q)$(CXX) -shared -o $@ $^ -lpsapi -lkernel32
+	$(Q)$(CXX) -shared -o $@ $^ $(DPI_SYSLIBS)
 endif
 
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
