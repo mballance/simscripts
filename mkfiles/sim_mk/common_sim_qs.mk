@@ -80,6 +80,11 @@ endif
 
 BUILD_TARGETS += vlog_build
 
+ifneq (,$(DPI_OBJS_LIBS))
+DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
+LIB_TARGETS += $(BUILD_DIR_A)/dpi.dll
+endif
+
 else # Rules
 
 # VOPT_FLAGS += +cover
@@ -115,12 +120,8 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 #	vsim -c -do run.do $(TOP) -qwavedb=+signal \
 
 ifneq (,$(DPI_OBJS_LIBS))
-DPI_LIBRARIES += $(BUILD_DIR_A)/dpi.dll
-LIB_TARGETS := $(BUILD_DIR_A)/dpi.dll
-
 $(BUILD_DIR_A)/dpi.dll : $(DPI_OBJS_LIBS)
-	echo "dpi.dll"
-	exit 1
+	$(Q)$(CXX) -shared -o $@ $^ -lpsapi -lkernel32
 endif
 
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
