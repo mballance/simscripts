@@ -5,10 +5,20 @@ COMMON_DEFS_MK_DIR := $(dir $(COMMON_DEFS_MK))
 
 include $(COMMON_DEFS_MK_DIR)/plusargs.mk
 
-OS=$(shell uname -o)
+uname_o=$(shell uname -o)
 ARCH=$(shell uname -m)
 
-ifeq (Cygwin,$(OS))
+ifeq (Cygwin,$(uname_o))
+OS:=Windows
+else
+ifeq (Msys,$(uname_o))
+OS:=Windows
+else # Not Cygwin and not Msys
+OS:=Linux
+endif
+endif # uname_o,Cygwin
+
+ifeq (Windows,$(OS))
   DYNLINK=false
   DLLEXT=.dll
   ifeq ($(ARCH), x86_64)
@@ -17,7 +27,7 @@ ifeq (Cygwin,$(OS))
     PLATFORM=cygwin
   endif
 else # Linux
-ifeq (Linux,$(shell uname))
+ifeq (Linux,$(OS))
   DLLEXT=.so
   LIBPREF=lib
   DYNLINK=true
@@ -33,7 +43,7 @@ endif
 endif
 
 
-ifeq (Cygwin,$(OS))
+ifeq (Cygwin,$(uname_o))
   ifeq ($(ARCH),x86_64)
     SYSTEMC_LIBDIR=$(SYSTEMC)/lib-cygwin64
   else
@@ -54,7 +64,7 @@ LINK=$(CXX)
 DLLOUT=-shared
 
 # CXXFLAGS += -I$(SYSTEMC)/include
-ifneq (Cygwin,$(OS))
+ifneq (Windows,$(OS))
 CXXFLAGS += -fPIC
 CFLAGS += -fPIC
 else
