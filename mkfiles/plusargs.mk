@@ -6,6 +6,11 @@ define get_plusarg
 $(patsubst +$(1)=%,%,$(filter +$(1)=%,$(2)))
 endef
 
+# $(patsubst +$(1),true,$(filter +$(1),$(2)))
+define have_plusarg
+$(filter +$(1),$(2))
+endef
+
 #PLUSARGS=$(shell perl scripts/argfile.pl ../units/units.f)
 
 #define extract

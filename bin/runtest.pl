@@ -54,7 +54,7 @@ $interactive=0;
 $debug="";
 $builddir="";
 $sim="";
-$plusargs="";
+@global_plusargs;
 
 if ( -f ".simscripts") {
 	print ("Note: loading defaults from .simscripts\n");
@@ -133,7 +133,7 @@ for ($i=0; $i <= $#ARGV; $i++) {
       exit 1;
     }
   } elsif ($arg =~ /^\+/) {
-  	$plusargs = $plusargs . " " . $arg;
+  	push(@global_plusargs, $arg);
   } else {
     if ($arg eq "build") {
       $cmd="build";
@@ -475,6 +475,11 @@ sub build {
     }
     
     $all_plusargs="";
+    for ($i=0; $i<=$#global_plusargs; $i++) {
+    	$val = expand($global_plusargs[$i]);
+    	$all_plusargs .= $val;
+   		$all_plusargs .= " ";
+    }
     for ($i=0; $i<=$#plusargs; $i++) {
     	$val = expand($plusargs[$i]);
     	$all_plusargs .= $val;
