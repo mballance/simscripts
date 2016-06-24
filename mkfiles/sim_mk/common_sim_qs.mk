@@ -82,7 +82,7 @@ BUILD_TARGETS += vlog_build
 
 ifneq (,$(DPI_OBJS_LIBS))
 DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
-LIB_TARGETS += $(BUILD_DIR_A)/dpi.dll
+LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
 endif
 
 ifeq ($(OS),Windows)
@@ -124,7 +124,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 #	vsim -c -do run.do $(TOP) -qwavedb=+signal \
 
 ifneq (,$(DPI_OBJS_LIBS))
-$(BUILD_DIR_A)/dpi.dll : $(DPI_OBJS_LIBS)
+$(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
 	$(Q)$(CXX) -shared -o $@ $^ $(DPI_SYSLIBS)
 endif
 
