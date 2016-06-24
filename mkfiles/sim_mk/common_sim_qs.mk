@@ -16,7 +16,7 @@ QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
 
-ifeq (Cygwin,$(OS))
+ifeq (Cygwin,$(uname_o))
 # Ensure we're using a Windows-style path for QUESTA_HOME
 QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME))
 
@@ -24,7 +24,7 @@ DPI_LIB := -Bsymbolic -L $(QUESTA_HOME)/win64 -lmtipli
 endif
 
 # Auto-identify GCC installation
-ifeq ($(OS),Cygwin)
+ifeq ($(OS),Windows)
 GCC_VERSION := 4.5.0
 
 ifeq ($(ARCH),x86_64)
