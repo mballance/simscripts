@@ -1,20 +1,22 @@
+#****************************************************************************
+#* common_sim_qs.mk
+#*
+#* Build and run definitions and rules for Questa Sim
+#****************************************************************************
 
 #********************************************************************
 #* Compile rules
 #********************************************************************
-# LIB_TARGETS += $(BUILD_DIR)/libs/tb_dpi.so
 
-#LD_LIBRARY_PATH := $(SVF_LIBDIR)/dpi:$(LD_LIBRARY_PATH)
-#export LD_LIBRARY_PATH
-#CXXFLAGS += -I$(QUESTA_HOME)/include -I$(QUESTA_HOME)/include/systemc
+ifneq (1,$(RULES))
 
-
+# Take QUESTA_HOME if set. Otherwise, probe from where executables are located
 ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
 
-ifeq (Cygwin,$(OS))
+ifeq (Cygwin,$(uname_o))
 # Ensure we're using a Windows-style path for QUESTA_HOME
 QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME))
 
@@ -22,7 +24,7 @@ DPI_LIB := -Bsymbolic -L $(QUESTA_HOME)/win64 -lmtipli
 endif
 
 # Auto-identify GCC installation
-ifeq ($(OS),Cygwin)
+ifeq ($(OS),Windows)
 GCC_VERSION := 4.5.0
 
 ifeq ($(ARCH),x86_64)
@@ -46,7 +48,8 @@ else
 GCC_INSTALL := $(QUESTA_HOME)/gcc-$(GCC_VERSION)-linux
 endif
 
-endif
+endif # End Not Cygwin
+
 CC:=$(GCC_INSTALL)/bin/gcc
 CXX:=$(GCC_INSTALL)/bin/g++
 
@@ -75,32 +78,40 @@ REDIRECT:= >/dev/null 2>&1
 else
 endif
 
-build : vlog_build $(LIB_TARGETS) $(TESTBENCH_OBJS) target_build
+BUILD_TARGETS += vlog_build
 
-.phony: vopt vopt_opt vopt_dbg vopt_compile
-vlog_build : vopt
+ifneq (,$(DPI_OBJS_LIBS))
+DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
+LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
+endif
 
-vopt : vopt_opt vopt_dbg
+ifeq ($(OS),Windows)
+DPI_SYSLIBS += -lpsapi -lkernel32
+endif
 
-vopt_opt : vopt_compile
-	$(Q)vopt -o $(TB)_opt $(TB) +cover $(REDIRECT)
+else # Rules
 
-vopt_dbg : vopt_compile
-	$(Q)vopt +acc -o $(TB)_dbg $(TB) +cover $(REDIRECT)
+# VOPT_FLAGS += +cover
 
-vopt_compile :
+.phony: vopt_opt vopt_dbg vlog_compile
+vlog_build : vopt_opt vopt_dbg
+
+VOPT_OPT_DEPS += vlog_compile
+VOPT_DBG_DEPS += vlog_compile
+
+vopt_opt : $(VOPT_OPT_DEPS)
+	$(Q)vopt -o $(TB)_opt $(TB) $(VOPT_FLAGS) $(REDIRECT) 
+
+vopt_dbg : $(VOPT_DBG_DEPS)
+	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
+
+vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)rm -rf work
 	$(Q)vlib work
 	$(Q)vlog -sv \
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS)
 
-#$(BUILD_DIR)/libs/tb_dpi.so : $(TESTBENCH_OBJS) $(BFM_LIBS) $(LIBSVF)
-#	if test ! -d $(BUILD_DIR)/libs; then mkdir -p $(BUILD_DIR)/libs; fi
-#	$(CXX) -o $@ -shared $(filter %.o, $^) \
-#		$(foreach l,$(filter %.so, $^), -L$(dir $(l)) -l$(subst lib,,$(basename $(notdir $(l))))) \
-#		$(LIBSVF_LINK)
-		
 #********************************************************************
 #* Simulation settings
 #********************************************************************
@@ -112,11 +123,17 @@ vopt_compile :
 #endif
 #	vsim -c -do run.do $(TOP) -qwavedb=+signal \
 
-ifeq (true,$(DYNLINK))
+ifneq (,$(DPI_OBJS_LIBS))
+$(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
+	$(Q)$(CXX) -shared -o $@ $^ $(DPI_SYSLIBS)
+endif
+
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
+
+ifeq (true,$(DYNLINK))
 else
 # DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-dpilib $(dpi)$(DPIEXT))
-DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
+# DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
 endif
 
 
@@ -124,9 +141,10 @@ run :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
-	$(Q)vmap work $(BUILD_DIR)/work $(REDIRECT)
+	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 #	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -coverage -l simx.log \
 #		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
-	$(Q)vsim $(VSIM_FLAGS) -do run.do $(TOP) -coverage -l simx.log \
+	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 
+endif

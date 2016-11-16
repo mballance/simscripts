@@ -14,17 +14,22 @@ use File::Basename;
 $SCRIPT=abs_path($0);
 $SCRIPT_DIR=dirname($SCRIPT);
 $COMMON_DIR=dirname($SCRIPT_DIR);
+
+use lib '$SCRIPT_DIR/lib/argfile_utils.pm';
+
 $ROOTDIR=dirname($COMMON_DIR);
 
 ($sysname,$nodename,$release,$version,$machine) = POSIX::uname();
 
 $SIM_DIR=getcwd();
+$SIM_DIR_A=$SIM_DIR;
 
 if ($sysname =~ /CYGWIN/) {
-	$SIM_DIR =~ s%^/cygdrive/([a-zA-Z])%$1:%;
+	$SIM_DIR_A =~ s%^/cygdrive/([a-zA-Z])%$1:%;
 }
 
 $ENV{SIM_DIR}=$SIM_DIR;
+$ENV{SIM_DIR_A}=$SIM_DIR_A;
 
 # if (! -d $ROOTDIR) {
 #	print "ERROR: Failed to locate root directory\n";
@@ -38,6 +43,7 @@ if (! -f "$ENV{SIMSCRIPTS_DIR}/mkfiles/common_defs.mk") {
   exit 1
 }
 
+
 $test="";
 @testlist;
 $count=1;
@@ -48,10 +54,23 @@ $build=1;
 $cmd="";
 $quiet="";
 $interactive=0;
-$debug="false";
+$debug="";
 $builddir="";
-$sim="qs";
-$plusargs="";
+$sim="";
+@global_plusargs;
+
+if ( -f ".simscripts") {
+	print ("Note: loading defaults from .simscripts\n");
+	load_defaults(".simscripts");
+}
+
+if ($sim eq "") {
+	$sim = "qs";
+}
+
+if ($debug eq "") {
+	$debug = "false";
+}
 
 # Global PID list
 @pid_list;
@@ -117,7 +136,7 @@ for ($i=0; $i <= $#ARGV; $i++) {
       exit 1;
     }
   } elsif ($arg =~ /^\+/) {
-  	$plusargs = $plusargs . " " . $arg;
+  	push(@global_plusargs, $arg);
   } else {
     if ($arg eq "build") {
       $cmd="build";
@@ -150,11 +169,14 @@ if ($builddir eq "") {
 # TODO: platform too?
 $builddir = $builddir . "/" . $sim;
 
+
+$ENV{BUILD_DIR}=$builddir;
+
 if ($sysname =~ /CYGWIN/) {
 	$builddir =~ s%^/cygdrive/([a-zA-Z])%$1:%;
 }
 
-$ENV{BUILD_DIR}=$builddir;
+$ENV{BUILD_DIR_A}=$builddir;
 
 print "cmd=$cmd\n";
 
@@ -234,165 +256,44 @@ sub process_testlist($) {
 	close($fh);
 }
 
-sub process_argfile {
-	my($dir,$file) = @_;
-	my($ch,$ch2,$tok);
-	my($argfile,$subdir);
-	my($l_unget_ch_1, $l_unget_ch_2);
+sub load_defaults {
+	my($dflt_file) = @_;
 	
-	unless (-f $file) {
-		if (-f "${dir}/${file}") {
-			$file = "${dir}/${file}";
-		}
-	}
-	
-	open(my $fh,"<", $file) or die "Failed to open $file";
-	$unget_ch_1 = -1;
-	$unget_ch_2 = -1;
-	
-	while (!(($tok = read_tok($fh)) eq "")) {
-		if ($tok =~ /^\+/) {
-			push(@plusargs, $tok);
-		} elsif ($tok =~ /^-/) {
-			# Option
-			if (($tok eq "-f") || ($tok eq "-F")) {
-				# Read the next token
-				$argfile = read_tok($fh);
-				
-				# Resolve argfile path
-				$argfile = expand($argfile);
-				
-				unless (-f $argfile) {
-					if (-f "$dir/$argfile") {
-						$argfile = "$dir/$argfile";
-					}
-				}
-				
-				if ($tok eq "-F") {
-					$subdir = dirname($argfile);
-				} else {
-					$subdir = $dir;
-				}
-				
-				$l_unget_ch_1 = $unget_ch_1;
-				$l_unget_ch_2 = $unget_ch_2;
-				
-				process_argfile($subdir, $argfile);
+	open(my $fh, "<", $dflt_file) or 
+	  die "Failed to open defaults file $dflt_file";
 
-				$unget_ch_1 = $l_unget_ch_1;	
-				$unget_ch_2 = $l_unget_ch_2;	
+	while (my $line = <$fh>) {
+		chomp $line;
+		# Remove comments
+		$line =~ s%#.*$%%g;
+		$line =~ s/\s//g;
+		
+		unless ($line eq "") {
+			$var = $line;
+			$var =~ s/(\w+)=.*$/$1/;
+			$val = $line;
+			$val =~ s/.*=(\w+)$/$1/;
+		
+			if ($var eq "sim") {
+				$sim = $val;
+			} elsif ($var eq "quiet") {
+				$quiet = $val;
+			} elsif ($var eq "debug") {
+				$debug = $val;
 			} else {
-				print("Unknown option\n");
-				push(@paths, $tok);
+				print "Warning: unrecognized defaults variable $var\n";
 			}
-		} else {
-			push(@paths, $tok);
-		}		
-	}
-
-	close($fh);
-}
-
-sub read_tok($) {
-	my($fh) = @_;
-	my($ch,$ch2,$tok);
-	my($cc1,$cc2);
-	
-	while (($ch = get_ch($fh)) != -1) {
-		if ($ch eq "/") {
-			$ch2 = get_ch($fh);
-			if ($ch2 eq "*") {
-				$cc1 = -1;
-				$cc2 = -1;
-			
-				while (($ch = get_ch($fh)) != -1) {
-					$cc2 = $cc1;
-					$cc1 = $ch;
-					if ($cc1 eq "/" && $cc2 eq "*") {
-						last;
-					}
-				}
-			
-				next;
-			} elsif ($ch2 eq "/") {
-				while (($ch = get_ch($fh)) != -1 && !($ch eq "\n")) {
-					;
-				}
-				unget_ch($ch);
-				next;
-			} else {
-				unget_ch($ch2);
-			}
-		} elsif ($ch =~/^\s*$/) {
-			while (($ch = get_ch($fh)) != -1 && $ch =~/^\s*$/) { }
-			unget_ch($ch);
-			next;
-		} else {
-			last;
-		}
-	}
-
-	$tok = "";
-		
-	while ($ch != -1 && !($ch =~/^\s*$/)) {
-		$tok .= $ch;
-		$ch = get_ch($fh);
-	}
-	unget_ch($ch);	
-		
-	return $tok;
-}
-
-sub unget_ch($) {
-	my($ch) = @_;
-
-	$unget_ch_2 = $unget_ch_1;	
-	$unget_ch_1 = $ch;
-}
-
-sub get_ch($) {
-	my($fh) = @_;
-	my($ch) = -1;
-	my($count);
-	
-	if ($unget_ch_1 != -1) {
-		$ch = $unget_ch_1;
-		$unget_ch_1 = $unget_ch_2;
-		$unget_ch_2 = -1;
-	} else {
-		$count = read($fh, $ch, 1);
-		
-		if ($count <= 0) {
-			$ch = -1;
 		}
 	}
 	
-	return $ch;
+	close($fh);	
 }
+
+
 
 sub fatal {
 	my($msg) = @_;
 	die $msg;
-}
-
-sub expand($) {
-	my($val) = @_;
-	my($offset) = 0;
-	my($ind,$end,$tok);
-	
-	while (($ind = index($val, "\$", $offset)) != -1) {
-		$end = index($val, "}", $index);
-		$tok = substr($val, $ind+2, ($end-($ind+2)));
-
-		if (exists $ENV{${tok}}) {
-			$val = substr($val, 0, $ind) . $ENV{${tok}} . 
-				substr($val, $end+1, length($val)-$end);
-		}
-		
-		$offset = $ind+1;
-	}
-	
-	return $val;
 }
 
 #*********************************************************************
@@ -423,6 +324,11 @@ sub build {
     }
     
     $all_plusargs="";
+    for ($i=0; $i<=$#global_plusargs; $i++) {
+    	$val = expand($global_plusargs[$i]);
+    	$all_plusargs .= $val;
+   		$all_plusargs .= " ";
+    }
     for ($i=0; $i<=$#plusargs; $i++) {
     	$val = expand($plusargs[$i]);
     	$all_plusargs .= $val;
@@ -507,7 +413,15 @@ sub run_jobs {
                 # Obtain options for the test
                 @plusargs = ();
                 $all_plusargs = "";
-                process_argfile(${SIM_DIR}, $test);
+                my @args = process_argfile(${SIM_DIR}, $test);
+                
+                for ($i=0; $i<=$#args; $i++) {
+                	if ($args[$i] =~ /^+/) {
+                		push(@plusargs, $arg[$i]);
+                	} else {
+                		push(@paths, $arg[$i]);
+                	}
+                }
                 
                 for ($i=0; $i<=$#plusargs; $i++) {
                 	$all_plusargs .= expand($plusargs[$i]);
@@ -531,11 +445,11 @@ sub run_jobs {
 					open(my $fh, "> ${run_dir}/sim.f");
 					
 	                if (-f "${SIM_DIR}/${test}") {
-	                	print $fh "-f \${SIM_DIR}/${test}\n";
+	                	print $fh "-f \${SIM_DIR_A}/${test}\n";
 	                } elsif (-f "${SIM_DIR}/tests/${test}") {
-	                	print $fh "-f \${SIM_DIR}/tests/${test}\n";
+	                	print $fh "-f \${SIM_DIR_A}/tests/${test}\n";
 	                } elsif (-f "${SIM_DIR}/tests/${testname}.f") {
-	                	print $fh "-f \${SIM_DIR}/tests/${test}.f\n";
+	                	print $fh "-f \${SIM_DIR_A}/tests/${test}.f\n";
 	                }
                 
 	                close($fh);

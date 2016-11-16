@@ -2,6 +2,8 @@
 #* simscripts set_env.sh
 #****************************************************************************
 
+# set -x
+
 rootdir=`pwd`
 
 while test "x$rootdir" != "x"; do
@@ -16,17 +18,18 @@ done
 if test "x$runtest" = "x"; then
   echo "Error: Failed to find root directory"
 else
+
+ # Found multiple runtest.pl scripts. Take the shortest one
   n_runtest=`echo $runtest | wc -w`
   if test $n_runtest -gt 1; then
     echo "Note: found multiple runtest.pl scripts: $runtest"
+    pl_min=1000000000
     for rt in $runtest; do
-      rt_dir=`dirname $rt`
-      rt_dir=`dirname $rt_dir`
-      if test -d $rt_dir/mkfiles; then
-        echo "Note: selecting $rt"
-        real_rt=$rt
-        break
-      fi
+    	pl=`echo $rt | wc -c`
+    	if test $pl -lt $pl_min; then
+    		pl_min=$pl
+    		real_rt=$rt
+    	fi
     done
     runtest=$real_rt
   fi
@@ -42,9 +45,12 @@ else
 
 
     # Environment-specific variables
+	export SIMSCRIPTS_PROJECT_ENV=true
     if test -f $SIMSCRIPTS_DIR/../env/env.sh; then
+    	echo "Note: sourcing environment-specific env.sh"
         . $SIMSCRIPTS_DIR/../env/env.sh
     fi
+    unset SIMSCRIPTS_PROJECT_ENV
   fi
 fi
 
