@@ -79,7 +79,9 @@ endif
 
 VSIM_FLAGS += $(RUN_ARGS)
 
-BUILD_TARGETS += vlog_build
+BUILD_COMPILE_TARGETS += vlog_compile
+
+BUILD_LINK_TARGETS += vopt_opt vopt_dbg
 
 RUN_TARGETS += run_vsim
 

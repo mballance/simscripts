@@ -15,7 +15,12 @@ $SCRIPT=abs_path($0);
 $SCRIPT_DIR=dirname($SCRIPT);
 $COMMON_DIR=dirname($SCRIPT_DIR);
 
-use lib '$SCRIPT_DIR/lib/argfile_utils.pm';
+BEGIN {
+	my $_script_dir=dirname(dirname(abs_path($0)));
+	unshift(@INC, "$_script_dir/lib");
+}
+
+require 'argfile_utils.pm';
 
 $ROOTDIR=dirname($COMMON_DIR);
 
@@ -548,14 +553,18 @@ sub pre_run {
     my($ret,$all_plusargs);
     
     $all_plusargs="";
+    
     for ($i=0; $i<=$#plusargs; $i++) {
     	$val = expand($plusargs[$i]);
     	$all_plusargs .= $val;
-    	
-    	if ($i+1 <= $#plusargs) {
-    		$all_plusargs .= " ";
-    	}
+   		$all_plusargs .= " ";
     }
+    
+	for ($i=0; $i<=$#global_plusargs; $i++) {
+		$val = expand($global_plusargs[$i]);
+    	$all_plusargs .= $val;
+   		$all_plusargs .= " ";
+	}    
     
     $ENV{PLUSARGS} = $all_plusargs;
         
@@ -581,10 +590,14 @@ sub post_run {
     	$val = expand($plusargs[$i]);
     	$all_plusargs .= $val;
     	
-    	if ($i+1 <= $#plusargs) {
-    		$all_plusargs .= " ";
-    	}
+   		$all_plusargs .= " ";
     }
+    
+	for ($i=0; $i<=$#global_plusargs; $i++) {
+		$val = expand($global_plusargs[$i]);
+    	$all_plusargs .= $val;
+   		$all_plusargs .= " ";
+	}    
     
     # Form a list of all specific tests run during this session
     unless ($all_plusargs eq "") {
@@ -687,10 +700,6 @@ sub run_jobs {
 			   		$all_plusargs .= " ";
     			}
     			                
-                $all_plusargs .= ${plusargs};
-                
-#                print "all_plusargs: $all_plusargs\n";
-                
                 $run_dir="${run_root}/${testname}_${seed_str}";
                 $testlist_idx++;
 
@@ -719,6 +728,7 @@ sub run_jobs {
                 	$testname =~ s/\.f//g;
                 	
                 	$ENV{PLUSARGS}=${all_plusargs};
+                	print "PLUSARGS=$ENV{PLUSARGS}\n";
                 
                     system("make",
                     	"-f" ,

@@ -58,7 +58,7 @@ ifneq (none,$(SIM))
 endif
 
 # Build a full list of tools to bring in
-SIMSCRIPTS_TOOLS += $(patsubst +tool.%,%,$(filter +tool.%,$(PLUSARGS))
+SIMSCRIPTS_TOOLS += $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(PLUSARGS))))
 
 # Include tool-specific makefiles
 MK_INCLUDES += $(foreach tool,$(SIMSCRIPTS_TOOLS),$(SIMSCRIPTS_DIR)/mkfiles/common_tool_$(tool).mk)
@@ -78,8 +78,6 @@ BUILD_TARGETS += build-pre-compile build-compile build-post-compile build-pre-li
 BUILD_TARGETS += build-link build-post-link	
 BUILD_TARGETS += $(LIB_TARGETS) $(EXE_TARGETS)
 	
-
-include $(COMMON_SIM_MK_DIR)/sim_mk/common_sim_$(SIM).mk	
 
 post_build : $(POSTBUILD_TARGETS)
 	if test "x$(TARGET_MAKEFILE)" != "x"; then \
@@ -133,15 +131,22 @@ build-pre-link : build-post-compile $(BUILD_PRELINK_TARGETS)
 
 build-link : build-pre-link $(BUILD_LINK_TARGETS)
 
-build-post-link : build-post-link $(BUILD_POSTLINK_TARGETS)
+build-post-link : build-link $(BUILD_POSTLINK_TARGETS)
 	
 build : $(BUILD_TARGETS)
 
 run : $(RUN_TARGETS)
 
-pre-run: $(PRE_RUN_TARGETS)
+pre-run: init-tools $(PRE_RUN_TARGETS)
 
 post-run: $(POST_RUN_TARGETS)
+
+init-tools:
+	@echo "== Simulator: $(SIM) == "
+	@echo "== Enabled Tools =="
+	@for tool in $(SIMSCRIPTS_TOOLS); do \
+		echo "  - $${tool}"; \
+	done
 
 missing_sim_mk :
 	@echo "Error: Failed to find makefile for sim $(SIM) in \$$(SIMSCRIPTS_DIR)/mkfiles/sim_mk and \$$(SIMSCRIPTS_DIR)/../mkfiles"
