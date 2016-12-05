@@ -4,6 +4,8 @@ include $(SIMSCRIPTS_DIR)/mkfiles/plusargs.mk
 TOP_MODULE ?= $(TB)
 DEBUG ?= false
 
+# RUN_ARGS
+
 # Timeout selection
 # - Test-specific timeout
 # - Project-specific timeout
@@ -33,14 +35,37 @@ SIM:=$(DEFAULT_SIM)
 endif
 
 include $(COMMON_SIM_MK_DIR)/common_defs.mk
+
+# Locate the simulator-support file
+# - Don't include a simulator-support file if SIM='none'
+# - Allow the test suite to provide its own
+# - Allow the environment to provide its own
+# - Finally, check if 'simscripts' provides an implementation
+ifneq (none,$(SIM))
+	ifneq ("$(wildcard $(SIM_DIR)/scripts/common_sim_$(SIM).mk)","")
+		MK_INCLUDES += $(SIM_DIR)/scripts/common_sim_$(SIM).mk
+	else
+		ifneq ("$(wildcard $(SIMSCRIPTS_DIR)/../mkfiles/common_sim_$(SIM).mk)","")
+			MK_INCLUDES += $(SIMSCRIPTS_DIR)/../mkfiles/common_sim_$(SIM).mk	
+		else
+			ifneq ("$(wildcard $(SIMSCRIPTS_DIR)/mkfiles/common_sim_$(SIM).mk)","") 
+				MK_INCLUDES += $(SIMSCRIPTS_DIR)/mkfiles/common_sim_$(SIM).mk
+			else
+				BUILD_TARGETS += missing_sim_mk
+			endif
+		endif
+	endif
+endif
+
+# Build a full list of tools to bring in
+SIMSCRIPTS_TOOLS += $(patsubst +tool.%,%,$(filter +tool.%,$(PLUSARGS))
+
+# Include tool-specific makefiles
+MK_INCLUDES += $(foreach tool,$(SIMSCRIPTS_TOOLS),$(SIMSCRIPTS_DIR)/mkfiles/common_tool_$(tool).mk)
+
 include $(MK_INCLUDES)
 
 DPIEXT=$(DLLEXT)
-
-#ifeq (Cygwin,$(OS))
-#BUILD_DIR := $(shell cygpath -w $(BUILD_DIR))
-#SIM_DIR := $(shell cygpath -w $(SIM_DIR))
-#endif
 
 CXXFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
 
@@ -48,14 +73,15 @@ vpath %.cpp $(SRC_DIRS)
 vpath %.S $(SRC_DIRS)
 vpath %.c $(SRC_DIRS)
 
-	
+
+BUILD_TARGETS += build-pre-compile build-compile build-post-compile build-pre-link
+BUILD_TARGETS += build-link build-post-link	
 BUILD_TARGETS += $(LIB_TARGETS) $(EXE_TARGETS)
 	
 
 include $(COMMON_SIM_MK_DIR)/sim_mk/common_sim_$(SIM).mk	
 
 post_build : $(POSTBUILD_TARGETS)
-	echo "SIM=$(SIM)"
 	if test "x$(TARGET_MAKEFILE)" != "x"; then \
 		$(MAKE) -f $(TARGET_MAKEFILE) build; \
 	fi
@@ -83,15 +109,45 @@ export LD_LIBRARY_PATH
 RULES := 1
 
 .phony: all build run target_build
+.phony: pre-run post-run
 
 all :
 	echo "Error: Specify target of build or run
 	exit 1
 	
+# Build Targets
+# - Pre-Compile
+# - Compile
+# - Post-Compile
+# - Pre-Link
+# - Link
+# - Post-Link
+
+build-pre-compile : $(BUILD_PRECOMPILE_TARGETS)
+
+build-compile : build-pre-compile $(BUILD_COMPILE_TARGETS)
+
+build-post-compile : build-compile $(BUILD_POSTCOMPILE_TARGETS)
+
+build-pre-link : build-post-compile $(BUILD_PRELINK_TARGETS)
+
+build-link : build-pre-link $(BUILD_LINK_TARGETS)
+
+build-post-link : build-post-link $(BUILD_POSTLINK_TARGETS)
+	
 build : $(BUILD_TARGETS)
 
+run : $(RUN_TARGETS)
+
+pre-run: $(PRE_RUN_TARGETS)
+
+post-run: $(POST_RUN_TARGETS)
+
+missing_sim_mk :
+	@echo "Error: Failed to find makefile for sim $(SIM) in \$$(SIMSCRIPTS_DIR)/mkfiles/sim_mk and \$$(SIMSCRIPTS_DIR)/../mkfiles"
+	@exit 1
+
 include $(COMMON_SIM_MK_DIR)/common_rules.mk
-include $(COMMON_SIM_MK_DIR)/sim_mk/common_sim_$(SIM).mk	
 include $(MK_INCLUDES)
 
 

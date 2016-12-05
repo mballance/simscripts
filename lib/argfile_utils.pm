@@ -75,6 +75,140 @@ sub process_argfile {
 	return @args;
 }
 
+sub process_testlist($) {
+	my($testlist_f) = @_;
+	my($ch,$ch2,$tok);
+	my($cc1, $cc2, $line, $idx);
+	my(@tokens);
+	my($test_cnt, $testname, $i, $tok);
+	
+	open(my $fh, "<", "$testlist_f") or die "Failed to open $testlist_f";
+	$unget_ch_1 = -1;
+	$unget_ch_2 = -1;
+
+	while (1) {
+		@tokens = read_test_line($fh);
+		if ($#tokens < 0) {
+			last;
+		}
+		$test_cnt=1;
+		$testname="";
+		for ($i=0; $i<=$#tokens; $i++) {
+			$tok = $tokens[$i];
+			
+			if ($tok =~ /^-/) {
+				if ($tok eq "-count") {
+					$i++;
+					$test_cnt=$tokens[$i];
+				}
+			} else {
+				if ($testname eq "") {
+					$testname = $tok;
+				} else {
+					print "Error: multiple tests specified in testlist: $tok\n";
+				}
+			}
+		}
+		
+		if ($testname eq "") {
+			print "Error: no test name specified\n";
+		} else {
+			for ($i=0; $i<$test_cnt; $i++) {
+				push(@testlist, $testname);
+			}
+		}
+	}
+	
+	close($fh);
+}
+
+sub read_test_line($) {
+	my($fh) = @_;
+	my($ch,$ch2,$line);
+	my($cc1,$cc2);
+	my($idx,$tok);
+	my(@tokens);
+
+	while (($ch = get_ch($fh)) != -1) {
+		# Strip comments
+		if ($ch eq "/") {
+			$ch2 = get_ch($fh);
+			if ($ch2 eq "*") {
+				$cc1 = -1;
+				$cc2 = -1;
+			
+				while (($ch = get_ch($fh)) != -1) {
+					$cc2 = $cc1;
+					$cc1 = $ch;
+					if ($cc1 eq "/" && $cc2 eq "*") {
+						last;
+					}
+				}
+			
+				next;
+			} elsif ($ch2 eq "/") {
+				while (($ch = get_ch($fh)) != -1 && !($ch eq "\n")) {
+					;
+				}
+				unget_ch($ch);
+				next;
+			} else {
+				unget_ch($ch2);
+			}
+		} elsif ($ch =~ /^\s*$/) { # Whitespace
+			while (($ch = get_ch($fh)) != -1 && $ch =~ /^\s*$/) { }
+			unget_ch($ch);
+			next;
+		} else {
+			last;
+		}
+	}
+
+	$tok = "";
+
+	# Read a line
+	$line = "";
+	while ($ch != -1) {
+		if ($ch eq "\\") {
+			print "ch=\\\n";
+		}
+		if ($ch eq "\n" && length($line) > 0) {
+			print "ch=\\n last=" . substr($line, length($line)-1, 1) . "\n";
+			if (!(substr($line, length($line)-1, 1) eq "\\")) {
+				last;
+			}
+		}
+		# Remove the line separator
+		if ($ch eq "\n" && substr($line, length($line)-1, 1) eq "\\") {
+			$line = substr($line, 0, length($line)-1);
+		}
+		unless ($ch eq "\n" || $ch eq "\r") {
+			$line .= $ch;
+		} elsif ($ch eq "\n") {
+			# Replace with whitespace
+			$line .= " ";
+		}
+		$ch = get_ch($fh);
+	}
+	unget_ch($ch);
+	
+	# Now, scan through the line 
+	for ($idx=0; $idx<length($line); $idx++) {
+		$tok="";
+		# Skip whitespace
+		if (substr($line, $idx, 1) =~ /^\s*$/) {
+			next;
+		}
+		while (!(substr($line, $idx, 1) =~ /^\s*$/)) {
+			$tok .= substr($line, $idx, 1);
+			$idx++;
+		}
+		push(@tokens, $tok);
+	}
+	
+	return @tokens;
+}
+
 sub read_tok($) {
 	my($fh) = @_;
 	my($ch,$ch2,$tok);

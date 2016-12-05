@@ -68,7 +68,6 @@ else
 define MK_DPI
 	rm -f $@
 	$(LD) -r -o $@ $^ 
-#	$(AR) vcq $@ $^ 
 endef
 endif
 
@@ -78,7 +77,13 @@ REDIRECT:= >/dev/null 2>&1
 else
 endif
 
+VSIM_FLAGS += $(RUN_ARGS)
+
 BUILD_TARGETS += vlog_build
+
+RUN_TARGETS += run_vsim
+
+POST_RUN_TARGETS += cov_merge
 
 ifneq (,$(DPI_OBJS_LIBS))
 DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
@@ -137,14 +142,16 @@ else
 endif
 
 
-run :
+run_vsim :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
-#	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -coverage -l simx.log \
-#		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 
+UCDB_FILES := $(foreach	test,$(call get_plusarg,TEST,$(PLUSARGS)),$(RUN_ROOT)/$(test)/cov.ucdb)
+cov_merge:
+	vcover merge $(RUN_ROOT)/cov_merge.ucdb $(UCDB_FILES)
+	
 endif

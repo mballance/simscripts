@@ -54,10 +54,14 @@ $build=1;
 $cmd="";
 $quiet="";
 $interactive=0;
-$debug="";
+$debug="false";
 $builddir="";
-$sim="";
+$sim="none";
 @global_plusargs;
+$plusargs="";
+$unget_ch_1 = -1;
+$unget_ch_2 = -1;
+
 
 if ( -f ".simscripts") {
 	print ("Note: loading defaults from .simscripts\n");
@@ -100,8 +104,8 @@ for ($i=0; $i <= $#ARGV; $i++) {
       $i++;
       push(@testlist, $ARGV[$i]);
     } elsif ($arg eq "-testlist" or $arg eq "-tl") {
-		$i++;
-		process_testlist($ARGV[$i]);
+      $i++;
+      process_testlist($ARGV[$i]);
     } elsif ($arg eq "-count") {
       $i++;
       $count=$ARGV[$i];
@@ -194,6 +198,17 @@ if ($#testlist < 0) {
   exit 1
 }
 
+if ($count > 1) {
+	if ($#testlist > 0) {
+		print "[ERROR] specifying count>1 invalid when specifying multiple tests\n";
+		exit 1;
+	}
+	
+	for ($i=1; $i<$count; $i++) {
+		push(@testlist, $testlist[0]);
+	}
+}
+
 if ($interactive == 1 && $count > 1) {
   print "[ERROR] Cannot specify -i and -count > 1 together\n";
   exit 1
@@ -235,25 +250,141 @@ sub printhelp {
   print "    runtest -test foo_test.f\n";
 }
 
-$unget_ch_1 = -1;
-$unget_ch_2 = -1;
 @plusargs;
 @paths;
 
 sub process_testlist($) {
 	my($testlist_f) = @_;
 	my($ch,$ch2,$tok);
-	my($cc1, $cc2);
+	my($cc1, $cc2, $line, $idx);
+	my(@tokens);
+	my($test_cnt, $testname, $i, $tok);
 	
 	open(my $fh, "<", "$testlist_f") or die "Failed to open $testlist_f";
 	$unget_ch_1 = -1;
 	$unget_ch_2 = -1;
 
-	while (!(($tok = read_tok($fh)) eq "")) {
-		push(@testlist, $tok);
+	while (1) {
+		@tokens = read_test_line($fh);
+		if ($#tokens < 0) {
+			last;
+		}
+		$test_cnt=1;
+		$testname="";
+		for ($i=0; $i<=$#tokens; $i++) {
+			$tok = $tokens[$i];
+			
+			if ($tok =~ /^-/) {
+				if ($tok eq "-count") {
+					$i++;
+					$test_cnt=$tokens[$i];
+				}
+			} else {
+				if ($testname eq "") {
+					$testname = $tok;
+				} else {
+					print "Error: multiple tests specified in testlist: $tok\n";
+				}
+			}
+		}
+		
+		if ($testname eq "") {
+			print "Error: no test name specified\n";
+		} else {
+			for ($i=0; $i<$test_cnt; $i++) {
+				push(@testlist, $testname);
+			}
+		}
 	}
 	
 	close($fh);
+}
+
+sub read_test_line($) {
+	my($fh) = @_;
+	my($ch,$ch2,$line);
+	my($cc1,$cc2);
+	my($idx,$tok);
+	my(@tokens);
+
+	while (($ch = get_ch($fh)) != -1) {
+		# Strip comments
+		if ($ch eq "/") {
+			$ch2 = get_ch($fh);
+			if ($ch2 eq "*") {
+				$cc1 = -1;
+				$cc2 = -1;
+			
+				while (($ch = get_ch($fh)) != -1) {
+					$cc2 = $cc1;
+					$cc1 = $ch;
+					if ($cc1 eq "/" && $cc2 eq "*") {
+						last;
+					}
+				}
+			
+				next;
+			} elsif ($ch2 eq "/") {
+				while (($ch = get_ch($fh)) != -1 && !($ch eq "\n")) {
+					;
+				}
+				unget_ch($ch);
+				next;
+			} else {
+				unget_ch($ch2);
+			}
+		} elsif ($ch =~ /^\s*$/) { # Whitespace
+			while (($ch = get_ch($fh)) != -1 && $ch =~ /^\s*$/) { }
+			unget_ch($ch);
+			next;
+		} else {
+			last;
+		}
+	}
+
+	$tok = "";
+
+	# Read a line
+	$line = "";
+	while ($ch != -1) {
+		if ($ch eq "\\") {
+			print "ch=\\\n";
+		}
+		if ($ch eq "\n" && length($line) > 0) {
+			print "ch=\\n last=" . substr($line, length($line)-1, 1) . "\n";
+			if (!(substr($line, length($line)-1, 1) eq "\\")) {
+				last;
+			}
+		}
+		# Remove the line separator
+		if ($ch eq "\n" && substr($line, length($line)-1, 1) eq "\\") {
+			$line = substr($line, 0, length($line)-1);
+		}
+		unless ($ch eq "\n" || $ch eq "\r") {
+			$line .= $ch;
+		} elsif ($ch eq "\n") {
+			# Replace with whitespace
+			$line .= " ";
+		}
+		$ch = get_ch($fh);
+	}
+	unget_ch($ch);
+	
+	# Now, scan through the line 
+	for ($idx=0; $idx<length($line); $idx++) {
+		$tok="";
+		# Skip whitespace
+		if (substr($line, $idx, 1) =~ /^\s*$/) {
+			next;
+		}
+		while (!(substr($line, $idx, 1) =~ /^\s*$/)) {
+			$tok .= substr($line, $idx, 1);
+			$idx++;
+		}
+		push(@tokens, $tok);
+	}
+	
+	return @tokens;
 }
 
 sub load_defaults {
@@ -289,11 +420,56 @@ sub load_defaults {
 	close($fh);	
 }
 
+sub unget_ch($) {
+	my($ch) = @_;
 
+	$unget_ch_2 = $unget_ch_1;	
+	$unget_ch_1 = $ch;
+}
+
+sub get_ch($) {
+	my($fh) = @_;
+	my($ch) = -1;
+	my($count);
+	
+	if ($unget_ch_1 != -1) {
+		$ch = $unget_ch_1;
+		$unget_ch_1 = $unget_ch_2;
+		$unget_ch_2 = -1;
+	} else {
+		$count = read($fh, $ch, 1);
+		
+		if ($count <= 0) {
+			$ch = -1;
+		}
+	}
+	
+	return $ch;
+}
 
 sub fatal {
 	my($msg) = @_;
 	die $msg;
+}
+
+sub expand($) {
+	my($val) = @_;
+	my($offset) = 0;
+	my($ind,$end,$tok);
+	
+	while (($ind = index($val, "\$", $offset)) != -1) {
+		$end = index($val, "}", $index);
+		$tok = substr($val, $ind+2, ($end-($ind+2)));
+
+		if (exists $ENV{${tok}}) {
+			$val = substr($val, 0, $ind) . $ENV{${tok}} . 
+				substr($val, $end+1, length($val)-$end);
+		}
+		
+		$offset = $ind+1;
+	}
+	
+	return $val;
 }
 
 #*********************************************************************
@@ -306,9 +482,13 @@ sub run_test {
     if ($build == 1) {
       build();
     }
+    
+    pre_run();
 
     # Now, 
     run_jobs($run_root,$test,$count,$quiet,$max_par,$start);
+    
+    post_run();
 }
 
 sub build {
@@ -362,6 +542,79 @@ sub build {
     if ($ret != 0) {
       die "Compilation Failed";
     }
+}
+
+sub pre_run {
+    my($ret,$all_plusargs);
+    
+    $all_plusargs="";
+    for ($i=0; $i<=$#plusargs; $i++) {
+    	$val = expand($plusargs[$i]);
+    	$all_plusargs .= $val;
+    	
+    	if ($i+1 <= $#plusargs) {
+    		$all_plusargs .= " ";
+    	}
+    }
+    
+    $ENV{PLUSARGS} = $all_plusargs;
+        
+    chdir("$builddir");
+    
+	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} pre-run |");
+	open(LOG, "> ${builddir}/pre-run.log");
+
+    while (<CP>) {
+       print($_);
+       print(LOG  $_);
+    }
+    close(LOG);
+    close(CP);	
+}
+
+sub post_run {
+    my($ret,$all_plusargs);
+    my($testname, $testleaf);
+    
+    $all_plusargs="";
+    for ($i=0; $i<=$#plusargs; $i++) {
+    	$val = expand($plusargs[$i]);
+    	$all_plusargs .= $val;
+    	
+    	if ($i+1 <= $#plusargs) {
+    		$all_plusargs .= " ";
+    	}
+    }
+    
+    # Form a list of all specific tests run during this session
+    unless ($all_plusargs eq "") {
+    	$all_plusargs .= " ";
+    }
+    for ($i=0; $i<=$#testlist; $i++) {
+    	$testname = basename($testlist[$i]);
+    	
+    	$testname =~ s/\.f//g;
+		$testname = sprintf("%s_%04d", $testname, ($i+1));
+		$all_plusargs .= "+TEST=$testname";
+		
+		if ($i+1 <= $#testlist) {
+			$all_plusargs .= " ";
+		}
+    }
+    
+    $ENV{PLUSARGS} = $all_plusargs;
+        
+    chdir("$builddir");
+    
+	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} post-run |");
+	open(LOG, "> ${builddir}/post-run.log");
+
+    while (<CP>) {
+       print($_);
+       print(LOG  $_);
+    }
+    close(LOG);
+    close(CP);
 }
 
 sub clean {
@@ -427,6 +680,13 @@ sub run_jobs {
                 	$all_plusargs .= expand($plusargs[$i]);
                		$all_plusargs .= " ";
                 }
+                
+			    for ($i=0; $i<=$#global_plusargs; $i++) {
+			    	$val = expand($global_plusargs[$i]);
+			    	$all_plusargs .= $val;
+			   		$all_plusargs .= " ";
+    			}
+    			                
                 $all_plusargs .= ${plusargs};
                 
 #                print "all_plusargs: $all_plusargs\n";
