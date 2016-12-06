@@ -497,7 +497,7 @@ sub run_test {
 }
 
 sub build {
-    my($ret,$all_plusargs);
+    my($ret,$all_plusargs,$cmd);
 
     if ($clean == 1) {
       system("rm -rf ${builddir}") && die;
@@ -534,8 +534,13 @@ sub build {
     unless ( -d "${SIM_DIR}/scripts" ) {
     	die "No 'scripts' directory present\n";
     }
-    
-    open(CP, "make -C ${builddir} -j ${max_par} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} build |");
+  
+	$cmd = "make -C ${builddir} -j ${max_par} ";
+	$cmd .= "-f ${SIM_DIR}/scripts/Makefile ";
+	$cmd .= "SIM=${sim} DEBUG=${debug} ";
+	$cmd .= "build |";
+	
+    open(CP, $cmd);
     open(LOG,"> ${builddir}/compile.log");
     while (<CP>) {
        print($_);

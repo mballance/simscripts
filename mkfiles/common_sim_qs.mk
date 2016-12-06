@@ -1,4 +1,5 @@
 #****************************************************************************
+
 #* common_sim_qs.mk
 #*
 #* Build and run definitions and rules for Questa Sim
@@ -56,8 +57,10 @@ CXX:=$(GCC_INSTALL)/bin/g++
 ifeq ($(DEBUG),true)
 	TOP=$(TOP_MODULE)_dbg
 	DOFILE_COMMANDS += "log -r /\*;"
+	BUILD_LINK_TARGETS += vopt_dbg
 else
 	TOP=$(TOP_MODULE)_opt
+	BUILD_LINK_TARGETS += vopt_opt
 endif
 
 ifeq (true,$(DYNLINK))
@@ -82,7 +85,6 @@ VSIM_FLAGS += -sv_seed $(SEED)
 
 BUILD_COMPILE_TARGETS += vlog_compile
 
-BUILD_LINK_TARGETS += vopt_opt vopt_dbg
 
 RUN_TARGETS += run_vsim
 
