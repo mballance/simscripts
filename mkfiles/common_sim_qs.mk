@@ -78,6 +78,7 @@ else
 endif
 
 VSIM_FLAGS += $(RUN_ARGS)
+VSIM_FLAGS += -sv_seed $(SEED)
 
 BUILD_COMPILE_TARGETS += vlog_compile
 
@@ -144,8 +145,10 @@ else
 endif
 
 
+
 run_vsim :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
+	$(Q)echo "coverage attribute -name TESTNAME -value $(TESTNAME)_$(SEED)" >> run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)

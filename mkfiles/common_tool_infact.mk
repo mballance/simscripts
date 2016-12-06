@@ -1,9 +1,25 @@
-
+#********************************************************************
+#* common_tool_infact.mk
+#*
+#* Variables
+#* - INFACT_SRC_PROJECTS   - list of source projects to be build
+#* - INFACT_IMPORT_TARGETS - 
+#* - INFACT_INI_FILES      - .ini files to add 
+#*
+#* Plusargs
+#* +tool.infact.ini=<path>
+#********************************************************************
 ifneq (1,$(RULES))
 
 PRE_RUN_TARGETS += start_sdm
 
 POST_RUN_TARGETS += stop_sdm
+
+# Ensure 
+RUN_ARGS += +infact=$(BUILD_DIR_A)/infactsdm_info.ini
+
+
+# BUILD_PRECOMPILE_TARGETS += $(foreach 
 
 else
 

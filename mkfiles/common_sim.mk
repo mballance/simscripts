@@ -57,8 +57,11 @@ ifneq (none,$(SIM))
 	endif
 endif
 
+# Filter out tool-control options like +tool.foo.setting_bar=XXX
+SIMSCRIPTS_PLUSARGS_TOOLS := $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(shell echo $(PLUSARGS) | sed -e 's/\+tool\.[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_]*.*//g'))))
+
 # Build a full list of tools to bring in
-SIMSCRIPTS_TOOLS += $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(PLUSARGS))))
+SIMSCRIPTS_TOOLS += $(SIMSCRIPTS_PLUSARGS_TOOLS)
 
 # Include tool-specific makefiles
 MK_INCLUDES += $(foreach tool,$(SIMSCRIPTS_TOOLS),$(SIMSCRIPTS_DIR)/mkfiles/common_tool_$(tool).mk)
