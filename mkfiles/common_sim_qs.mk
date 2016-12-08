@@ -17,6 +17,8 @@ QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
 
+HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
+
 ifeq (Cygwin,$(uname_o))
 # Ensure we're using a Windows-style path for QUESTA_HOME
 QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME))
@@ -84,7 +86,6 @@ VSIM_FLAGS += $(RUN_ARGS)
 VSIM_FLAGS += -sv_seed $(SEED)
 
 BUILD_COMPILE_TARGETS += vlog_compile
-
 
 RUN_TARGETS += run_vsim
 

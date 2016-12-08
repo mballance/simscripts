@@ -733,7 +733,6 @@ sub run_jobs {
                 	$testname =~ s/\.f//g;
                 	
                 	$ENV{PLUSARGS}=${all_plusargs};
-                	print "PLUSARGS=$ENV{PLUSARGS}\n";
                 
                     system("make",
                     	"-f" ,
@@ -748,7 +747,7 @@ sub run_jobs {
                     	);
                 
                 	
-                    open(my $fh, "$SIM_DIR/scripts/status.sh $testname |") or die "Failed to launch check program";
+                    open(my $fh, "$SIM_DIR/scripts/status.sh $testname $seed |") or die "Failed to launch check program";
                     
                     $result = <$fh>;
                     

@@ -77,9 +77,9 @@ vpath %.S $(SRC_DIRS)
 vpath %.c $(SRC_DIRS)
 
 
-BUILD_TARGETS += build-pre-compile build-compile build-post-compile build-pre-link
-BUILD_TARGETS += build-link build-post-link	
-BUILD_TARGETS += $(LIB_TARGETS) $(EXE_TARGETS)
+#BUILD_TARGETS += build-pre-compile build-compile build-post-compile build-pre-link
+BUILD_TARGETS += build-post-link	
+BUILD_LINK_TARGETS += $(LIB_TARGETS) $(EXE_TARGETS)
 	
 
 post_build : $(POSTBUILD_TARGETS)
@@ -124,19 +124,39 @@ all :
 # - Link
 # - Post-Link
 
+
 build-pre-compile : $(BUILD_PRECOMPILE_TARGETS)
+	@touch $@
 
 build-compile : build-pre-compile $(BUILD_COMPILE_TARGETS)
+	@touch $@
+	
+$(BUILD_COMPILE_TARGETS) : build-pre-compile
 
 build-post-compile : build-compile $(BUILD_POSTCOMPILE_TARGETS)
+	@touch $@
+	
+$(BUILD_POSTCOMPILE_TARGETS) : build-compile
 
 build-pre-link : build-post-compile $(BUILD_PRELINK_TARGETS)
+	@touch $@
+	
+$(BUILD_PRELINK_TARGETS) : build-post-compile
 
 build-link : build-pre-link $(BUILD_LINK_TARGETS)
+	@touch $@
+	
+$(BUILD_LINK_TARGETS) : build-pre-link
 
 build-post-link : build-link $(BUILD_POSTLINK_TARGETS)
+	@touch $@
 	
-build : $(BUILD_TARGETS)
+$(BUILD_POSTLINK_TARGETS) : build-link
+	
+# build : $(BUILD_TARGETS)
+build : build-post-link
+	@touch $@
+
 
 run : $(RUN_TARGETS)
 
