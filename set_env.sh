@@ -43,6 +43,11 @@ else
     # TODO: check whether the PATH already contains the in directory
     PATH=${SIMSCRIPTS_DIR}/bin:$PATH
 
+    is_bash=`echo $SHELL | sed -e's%^.*\(bash\).*$%\1%g'`
+    if test "x$is_bash" = "xbash"; then
+      . $SIMSCRIPTS_DIR/lib/bash_helpers.sh
+    fi
+
 
     # Environment-specific variables
 	export SIMSCRIPTS_PROJECT_ENV=true

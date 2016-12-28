@@ -3,7 +3,7 @@
 comma:= ,
 
 define get_plusarg
-$(patsubst +$(1)=%,%,$(filter +$(1)=%,$(2)))
+$(sort $(patsubst +$(1)=%,%,$(filter +$(1)=%,$(2))))
 endef
 
 define have_plusarg

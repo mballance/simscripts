@@ -58,7 +58,7 @@ ifneq (none,$(SIM))
 endif
 
 # Filter out tool-control options like +tool.foo.setting_bar=XXX
-SIMSCRIPTS_PLUSARGS_TOOLS := $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(shell echo $(PLUSARGS) | sed -e 's/\+tool\.[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_]*.*//g'))))
+SIMSCRIPTS_PLUSARGS_TOOLS := $(sort $(patsubst +tool.%,%,$(filter +tool.%,$(shell echo $(PLUSARGS) | sed -e 's/\+tool\.[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_\.]*//g'))))
 
 # Build a full list of tools to bring in
 SIMSCRIPTS_TOOLS += $(SIMSCRIPTS_PLUSARGS_TOOLS)
@@ -124,6 +124,8 @@ all :
 # - Link
 # - Post-Link
 
+#.phony: build-pre-compile build-compile build-post-compile
+#.phony: build-pre-link build-link build-post-link
 
 build-pre-compile : $(BUILD_PRECOMPILE_TARGETS)
 	@touch $@
@@ -155,6 +157,16 @@ $(BUILD_POSTLINK_TARGETS) : build-link
 	
 # build : $(BUILD_TARGETS)
 build : build-post-link
+	@echo "SIMSCRIPTS_TOOLS: $(SIMSCRIPTS_TOOLS)"
+	@echo "SIMSCRIPTS_PLUSARGS_TOOLS: $(SIMSCRIPTS_PLUSARGS_TOOLS)"
+	@echo "PLUSARGS: $(sort $(PLUSARGS))"
+	@echo "INFACT_IMPORT_TARGETS: $(INFACT_IMPORT_TARGETS)"
+	@echo "build-pre-compile: $(BUILD_PRECOMPILE_TARGETS)"
+	@echo "build-compile: $(BUILD_COMPILE_TARGETS)"
+	@echo "build-post-compile: $(BUILD_POSTCOMPILE_TARGETS)"
+	@echo "build-pre-link: $(BUILD_PRELINK_TARGETS)"
+	@echo "build-link: $(BUILD_LINK_TARGETS)"
+	@echo "build-post-link: $(BUILD_POSTLINK_TARGETS)"
 	@touch $@
 
 

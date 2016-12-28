@@ -3,6 +3,10 @@
 #* common_sim_qs.mk
 #*
 #* Build and run definitions and rules for Questa Sim
+#*
+#*
+#* +tool.questa.codecov    - Enables code coverage
+#* +tool.questa.ucdb       - Specifies the name of the merged UCDB file
 #****************************************************************************
 
 #********************************************************************
@@ -18,6 +22,12 @@ QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
 
 HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
+CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
+UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
+
+ifeq (,$(UCDB_NAME))
+UCDB_NAME:=cov_merge.ucdb
+endif
 
 ifeq (Cygwin,$(uname_o))
 # Ensure we're using a Windows-style path for QUESTA_HOME
@@ -91,6 +101,9 @@ RUN_TARGETS += run_vsim
 
 POST_RUN_TARGETS += cov_merge
 
+SIMSCRIPTS_SIM_INFO_TARGETS   += questa-sim-info
+SIMSCRIPTS_SIM_OPTION_TARGETS += questa-sim-options
+
 ifneq (,$(DPI_OBJS_LIBS))
 DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
 LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
@@ -100,9 +113,20 @@ ifeq ($(OS),Windows)
 DPI_SYSLIBS += -lpsapi -lkernel32
 endif
 
+ifeq (true,$(CODECOV_ENABLED))
+	VOPT_FLAGS += +cover
+	VSIM_FLAGS += -coverage
+endif
+
 else # Rules
 
-# VOPT_FLAGS += +cover
+questa-sim-info :
+	@echo "qs - QuestaSim"
+
+questa-sim-options :
+	@echo "Simulator: qs (QuestaSim)"
+	@echo "  +tool.questa.codecov      - Enables collection of code coverage"
+	@echo "  +tool.questa.ucdb=<name>  - Specifies the name of the merged UCDB file"
 
 .phony: vopt_opt vopt_dbg vlog_compile
 vlog_build : vopt_opt vopt_dbg
@@ -136,7 +160,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 
 ifneq (,$(DPI_OBJS_LIBS))
 $(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
-	$(Q)$(CXX) -shared -o $@ $^ $(DPI_SYSLIBS)
+	$(Q)$(CXX) -shared -o $@ $(DPI_OBJS_LIBS) $(DPI_SYSLIBS)
 endif
 
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
@@ -151,6 +175,7 @@ endif
 
 run_vsim :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
+	$(Q)echo "echo \"SV_SEED: $(SEED)\"" >> run.do
 	$(Q)echo "coverage attribute -name TESTNAME -value $(TESTNAME)_$(SEED)" >> run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
@@ -160,6 +185,6 @@ run_vsim :
 
 UCDB_FILES := $(foreach	test,$(call get_plusarg,TEST,$(PLUSARGS)),$(RUN_ROOT)/$(test)/cov.ucdb)
 cov_merge:
-	vcover merge $(RUN_ROOT)/cov_merge.ucdb $(UCDB_FILES)
+	vcover merge $(RUN_ROOT)/$(UCDB_NAME) $(UCDB_FILES)
 	
 endif
