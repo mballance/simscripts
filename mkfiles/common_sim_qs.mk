@@ -7,6 +7,8 @@
 #*
 #* +tool.questa.codecov    - Enables code coverage
 #* +tool.questa.ucdb       - Specifies the name of the merged UCDB file
+#* +tool.questa.valgrind   - Runs Questa under valgrind
+#* +tool.questa.gdb        - Runs Questa under gdb
 #****************************************************************************
 
 #********************************************************************
@@ -23,6 +25,8 @@ endif
 
 HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
 CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
+VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
+GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
 UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
 
 ifeq (,$(UCDB_NAME))
@@ -118,6 +122,12 @@ ifeq (true,$(CODECOV_ENABLED))
 	VSIM_FLAGS += -coverage
 endif
 
+VOPT_FLAGS += -dpiheader $(TB)_dpi.h
+
+ifeq (true,$(VALGRIND_ENABLED))
+	VSIM_FLAGS += -valgrind --tool=memcheck
+endif
+
 else # Rules
 
 questa-sim-info :
@@ -173,6 +183,17 @@ endif
 
 
 
+ifeq (true,$(GDB_ENABLED))
+run_vsim :
+	$(Q)echo $(DOFILE_COMMANDS) > run.do
+	$(Q)echo "echo \"SV_SEED: $(SEED)\"" >> run.do
+	$(Q)echo "coverage attribute -name TESTNAME -value $(TESTNAME)_$(SEED)" >> run.do
+	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
+	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
+	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
+	$(Q)gdb --args $(QUESTA_HOME)/linux_x86_64/vsimk $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
+		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
+else
 run_vsim :
 	$(Q)echo $(DOFILE_COMMANDS) > run.do
 	$(Q)echo "echo \"SV_SEED: $(SEED)\"" >> run.do
@@ -182,6 +203,7 @@ run_vsim :
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
+endif
 
 UCDB_FILES := $(foreach	test,$(call get_plusarg,TEST,$(PLUSARGS)),$(RUN_ROOT)/$(test)/cov.ucdb)
 cov_merge:
