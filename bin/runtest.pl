@@ -60,6 +60,7 @@ $cmd="";
 $quiet="";
 $interactive=0;
 $debug="false";
+$project="";
 $builddir="";
 $sim="none";
 @global_plusargs;
@@ -158,7 +159,10 @@ for ($i=0; $i <= $#ARGV; $i++) {
   }
 }
 
-$project=basename(dirname($SIM_DIR));
+# Only auto-probe the project name if it hasn't already been set
+if ($project eq "") {
+	$project=basename(dirname($SIM_DIR));
+}
 
 $run_root="${run_root}/${project}";
 
@@ -416,6 +420,8 @@ sub load_defaults {
 				$quiet = $val;
 			} elsif ($var eq "debug") {
 				$debug = $val;
+			} elseif ($var eq "project") {
+				$project = $val;
 			} else {
 				print "Warning: unrecognized defaults variable $var\n";
 			}
