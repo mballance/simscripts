@@ -420,7 +420,7 @@ sub load_defaults {
 				$quiet = $val;
 			} elsif ($var eq "debug") {
 				$debug = $val;
-			} elseif ($var eq "project") {
+			} elsif ($var eq "project") {
 				$project = $val;
 			} else {
 				print "Warning: unrecognized defaults variable $var\n";
