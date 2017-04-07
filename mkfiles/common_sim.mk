@@ -71,6 +71,7 @@ include $(MK_INCLUDES)
 DPIEXT=$(DLLEXT)
 
 CXXFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
+CFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
 
 vpath %.cpp $(SRC_DIRS)
 vpath %.S $(SRC_DIRS)
