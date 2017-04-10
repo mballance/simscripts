@@ -74,6 +74,7 @@ CXXFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
 CFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
 
 vpath %.cpp $(SRC_DIRS)
+vpath %.cc $(SRC_DIRS)
 vpath %.S $(SRC_DIRS)
 vpath %.c $(SRC_DIRS)
 
@@ -188,8 +189,8 @@ missing_sim_mk :
 	@echo "Error: Failed to find makefile for sim $(SIM) in \$$(SIMSCRIPTS_DIR)/mkfiles/sim_mk and \$$(SIMSCRIPTS_DIR)/../mkfiles"
 	@exit 1
 
-include $(COMMON_SIM_MK_DIR)/common_rules.mk
 include $(MK_INCLUDES)
+include $(COMMON_SIM_MK_DIR)/common_rules.mk
 
 
 

@@ -67,6 +67,7 @@ $sim="none";
 $plusargs="";
 $unget_ch_1 = -1;
 $unget_ch_2 = -1;
+$verbose=0;
 
 
 if ( -f ".simscripts") {
@@ -140,6 +141,8 @@ for ($i=0; $i <= $#ARGV; $i++) {
     } elsif ($arg eq "-sim") {
     	$i++;
     	$sim=$ARGV[$i];
+    } elsif ($arg eq "-v") {
+        $verbose++;
     } else {
       print "[ERROR] Unknown option $arg\n";
       printhelp();
@@ -542,6 +545,9 @@ sub build {
     }
   
 	$cmd = "make -C ${builddir} -j ${max_par} ";
+    if ($verbose > 0) {
+      $cmd .= "VERBOSE=true ";
+    }
 	$cmd .= "-f ${SIM_DIR}/scripts/Makefile ";
 	$cmd .= "SIM=${sim} DEBUG=${debug} ";
 	$cmd .= "build |";
