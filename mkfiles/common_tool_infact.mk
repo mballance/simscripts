@@ -29,12 +29,14 @@ INFACT_BUILDDIR_PROJECTS += $(foreach proj,$(INFACT_SRC_PROJECTS),$(notdir $(pro
 RUN_ARGS += $(foreach ini,$(INFACT_INI_FILES),+infact=$(ini))
 RUN_ARGS += +infact=$(BUILD_DIR_A)/infactsdm_info.ini
 
-BUILD_POSTCOMPILE_TARGETS += $(INFACT_IMPORT_TARGETS) infact-build-nonimport-projects
+BUILD_PRECOMPILE_TARGETS += infact-build-nonimport-projects
+BUILD_POSTCOMPILE_TARGETS += $(INFACT_IMPORT_TARGETS) 
 BUILD_PRELINK_TARGETS += $(INFACT_RECOMPILE_TARGETS)
 
 SIMSCRIPTS_TOOL_INFO_TARGETS += infact-tool-info
 SIMSCRIPTS_TOOL_OPTIONS_TARGETS += infact-tool-options 
 
+VLOG_FLAGS += +define+INFACT
 
 else
 

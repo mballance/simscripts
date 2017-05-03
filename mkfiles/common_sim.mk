@@ -89,18 +89,12 @@ post_build : $(POSTBUILD_TARGETS)
 		$(MAKE) -f $(TARGET_MAKEFILE) build; \
 	fi
 
+ifeq (,$(VLOG_ARGS))
 ifeq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM).f))
-#ifeq (Cygwin,$(OS))
-#VLOG_ARGS += -f $(shell cygpath -w $(SIM_DIR)/scripts/vlog.f)
-#else
 VLOG_ARGS += -f $(SIM_DIR_A)/scripts/vlog.f
-#endif
 else
-#ifeq (Cygwin,$(OS))
-#VLOG_ARGS += -f $(shell cygpath -w $(SIM_DIR)/scripts/vlog_$(SIM).f)
-#else
 VLOG_ARGS += -f $(SIM_DIR_A)/scripts/vlog_$(SIM).f
-#endif
+endif
 endif
 
 
@@ -171,8 +165,21 @@ build : build-post-link
 	@echo "build-post-link: $(BUILD_POSTLINK_TARGETS)"
 	@touch $@
 
+run-pre : $(RUN_PRE_TARGETS)
+	$(Q)touch $@
 
-run : $(RUN_TARGETS)
+run-main : run-pre $(RUN_TARGETS)
+	$(Q)touch $@
+
+$(RUN_TARGETS) : run-pre
+
+run-post : run-main $(RUN_POST_TARGETS)
+	$(Q)touch $@
+
+$(RUN_POST_TARGETS) : run-main
+
+run : run-post
+	$(Q)touch $@
 
 pre-run: init-tools $(PRE_RUN_TARGETS)
 

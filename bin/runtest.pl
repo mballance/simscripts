@@ -68,6 +68,7 @@ $plusargs="";
 $unget_ch_1 = -1;
 $unget_ch_2 = -1;
 $verbose=0;
+$VERBOSE=false;
 
 
 if ( -f ".simscripts") {
@@ -160,6 +161,10 @@ for ($i=0; $i <= $#ARGV; $i++) {
       exit 1;
     }
   }
+}
+
+if ($verbose > 0) {
+  $VERBOSE=true;
 }
 
 # Only auto-probe the project name if it hasn't already been set
@@ -587,7 +592,7 @@ sub pre_run {
         
     chdir("$builddir");
     
-	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} pre-run |");
+	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} VERBOSE=${VERBOSE} pre-run |");
 	open(LOG, "> ${builddir}/pre-run.log");
 
     while (<CP>) {
@@ -636,7 +641,7 @@ sub post_run {
         
     chdir("$builddir");
     
-	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} post-run |");
+	open(CP, "make -C ${builddir} -f ${SIM_DIR}/scripts/Makefile SIM=${sim} VERBOSE=${VERBOSE} post-run |");
 	open(LOG, "> ${builddir}/post-run.log");
 
     while (<CP>) {
@@ -754,6 +759,7 @@ sub run_jobs {
                     	"QUIET=${quiet}",
                     	"TESTNAME=${testname}", 
                     	"INTERACTIVE=${interactive}",
+						"VERBOSE=${VERBOSE}",
                     	"DEBUG=${debug}",
                     	"run"
                     	);

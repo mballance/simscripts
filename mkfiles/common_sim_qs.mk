@@ -9,6 +9,7 @@
 #* +tool.questa.ucdb       - Specifies the name of the merged UCDB file
 #* +tool.questa.valgrind   - Runs Questa under valgrind
 #* +tool.questa.gdb        - Runs Questa under gdb
+#* +tool.questa.xprop      - Enables xprop
 #****************************************************************************
 
 #********************************************************************
@@ -28,6 +29,7 @@ CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
 VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
 GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
 UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
+HAVE_XPROP := $(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
 
 ifeq (,$(UCDB_NAME))
 UCDB_NAME:=cov_merge.ucdb
@@ -59,11 +61,11 @@ else
 GCC_VERSION := 4.5.0
 endif
 
-ifeq ($(ARCH),x86_64)
+#ifeq ($(ARCH),x86_64)
 GCC_INSTALL := $(QUESTA_HOME)/gcc-$(GCC_VERSION)-linux_x86_64
-else
-GCC_INSTALL := $(QUESTA_HOME)/gcc-$(GCC_VERSION)-linux
-endif
+#else
+#GCC_INSTALL := $(QUESTA_HOME)/gcc-$(GCC_VERSION)-linux
+#endif
 
 endif # End Not Cygwin
 
@@ -71,9 +73,14 @@ CC:=$(GCC_INSTALL)/bin/gcc
 CXX:=$(GCC_INSTALL)/bin/g++
 
 ifeq ($(DEBUG),true)
-	TOP=$(TOP_MODULE)_dbg
 	DOFILE_COMMANDS += "log -r /\*;"
+ifeq (true,$(HAVE_VISUALIZER))
+	BUILD_LINK_TARGETS += vopt_opt
+	TOP=$(TOP_MODULE)_opt
+else
 	BUILD_LINK_TARGETS += vopt_dbg
+	TOP=$(TOP_MODULE)_dbg
+endif
 else
 	TOP=$(TOP_MODULE)_opt
 	BUILD_LINK_TARGETS += vopt_opt
@@ -124,6 +131,10 @@ endif
 
 VOPT_FLAGS += -dpiheader $(TB)_dpi.h
 
+ifeq (true,$(HAVE_XPROP))
+VOPT_FLAGS += -xprop
+endif
+
 ifeq (true,$(VALGRIND_ENABLED))
 	VSIM_FLAGS += -valgrind --tool=memcheck
 endif
@@ -139,10 +150,20 @@ questa-sim-options :
 	@echo "  +tool.questa.ucdb=<name>  - Specifies the name of the merged UCDB file"
 
 .phony: vopt_opt vopt_dbg vlog_compile
+
+ifeq (true,$(HAVE_VISUALIZER))
+vlog_build : vopt_opt
+else
 vlog_build : vopt_opt vopt_dbg
+endif
 
 VOPT_OPT_DEPS += vlog_compile
 VOPT_DBG_DEPS += vlog_compile
+
+ifeq (true,$(HAVE_VISUALIZER))
+	VOPT_FLAGS += +designfile -debug
+	VSIM_FLAGS += -classdebug -uvmcontrol=struct,msglog -qwavedb=+report=class+signal+class+transaction+uvm_schematic
+endif
 
 vopt_opt : $(VOPT_OPT_DEPS)
 	$(Q)vopt -o $(TB)_opt $(TB) $(VOPT_FLAGS) $(REDIRECT) 
@@ -154,6 +175,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)rm -rf work
 	$(Q)vlib work
 	$(Q)vlog -sv \
+		$(VLOG_FLAGS) \
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS)
 
@@ -201,6 +223,7 @@ run_vsim :
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
+	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
 	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 endif
