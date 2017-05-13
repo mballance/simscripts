@@ -766,12 +766,17 @@ sub run_jobs {
                 
                 	
                     open(my $fh, "$SIM_DIR/scripts/status.sh $testname $seed |") or die "Failed to launch check program";
+					open(my $st, ">test.status") or 
+						die "Failed to open test.status";
                     
                     $result = <$fh>;
                     
                     print "$result";
+
+					print $st "$result";
                     
                     close($fh);
+					close($st);
                     
                     exit 0;
                 }
