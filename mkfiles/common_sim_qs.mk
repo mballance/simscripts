@@ -55,10 +55,18 @@ LD:=$(GCC_INSTALL)/libexec/gcc/$(ARCH)-w32-mingw32/$(GCC_VERSION)/ld
 endif
 
 else # Not Cygwin
-ifeq (,$(wildcard $(QUESTA_HOME)/gcc-4.7.4-linux-*))
-GCC_VERSION := 4.7.4
+ifeq (,$(wildcard $(QUESTA_HOME)/gcc-5.3.0-linux-*))
+GCC_VERSION := 5.3.0
 else
-GCC_VERSION := 4.5.0
+  ifeq (,$(wildcard $(QUESTA_HOME)/gcc-4.7.4-linux-*))
+      GCC_VERSION := 4.7.4
+  else
+    ifeq (,$(wildcard $(QUESTA_HOME)/gcc-4.5.0-linux-*))
+      GCC_VERSION := 4.5.0
+    else
+      GCC_VERSION := UNKNOWN
+    endif
+  endif
 endif
 
 #ifeq ($(ARCH),x86_64)
@@ -162,7 +170,8 @@ VOPT_DBG_DEPS += vlog_compile
 
 ifeq (true,$(HAVE_VISUALIZER))
 	VOPT_FLAGS += +designfile -debug
-	VSIM_FLAGS += -classdebug -uvmcontrol=struct,msglog -qwavedb=+report=class+signal+class+transaction+uvm_schematic
+	VSIM_FLAGS += -classdebug -uvmcontrol=struct,msglog 
+	VSIM_FLAGS += -qwavedb=+report=class+signal+class+transaction+uvm_schematic+memory=256,2
 endif
 
 vopt_opt : $(VOPT_OPT_DEPS)
