@@ -11,6 +11,11 @@ DEBUG ?= false
 # - Project-specific timeout
 # - 1ms
 TEST_TIMEOUT := $(call get_plusarg,TIMEOUT,$(PLUSARGS))
+TEST_SEED := $(call get_plusarg,seed,$(PLUSARGS))
+
+ifneq (,$(TEST_SEED))
+SEED := $(TEST_SEED)
+endif
 
 ifneq (,$(TEST_TIMEOUT))
 TIMEOUT := $(TEST_TIMEOUT)

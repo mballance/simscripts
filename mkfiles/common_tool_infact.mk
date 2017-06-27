@@ -16,9 +16,15 @@
 #********************************************************************
 ifneq (1,$(RULES))
 
+HAVE_START_SDM:=$(call have_plusarg,tool.infact.sdm.start,$(PLUSARGS))
+
+ifeq (true,$(HAVE_START_SDM))
 PRE_RUN_TARGETS += start_sdm
 
 POST_RUN_TARGETS += stop_sdm
+
+RUN_ARGS += +infact=$(BUILD_DIR_A)/infactsdm_info.ini
+endif
 
 INFACT_INI_FILES += $(foreach proj,$(INFACT_BUILDDIR_PROJECTS),$(BUILD_DIR_A)/$(proj)/$(notdir $(proj)).ini)
 
@@ -27,7 +33,6 @@ INFACT_BUILDDIR_PROJECTS += $(foreach proj,$(INFACT_SRC_PROJECTS),$(notdir $(pro
 
 # Ensure 
 RUN_ARGS += $(foreach ini,$(INFACT_INI_FILES),+infact=$(ini))
-RUN_ARGS += +infact=$(BUILD_DIR_A)/infactsdm_info.ini
 
 BUILD_PRECOMPILE_TARGETS += infact-build-nonimport-projects
 BUILD_POSTCOMPILE_TARGETS += $(INFACT_IMPORT_TARGETS) 

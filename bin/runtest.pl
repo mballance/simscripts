@@ -58,7 +58,7 @@ $clean=0;
 $build=1;
 $cmd="";
 $quiet="";
-$interactive=0;
+$interactive=false;
 $debug="false";
 $project="";
 $builddir="";
@@ -134,7 +134,7 @@ for ($i=0; $i <= $#ARGV; $i++) {
        $i++;
        $start=$ARGV[$i];
     } elsif ($arg eq "-i") {
-       $interactive=1;
+       $interactive=true;
     } elsif ($arg eq "-d") {
     	$debug="true";
     } elsif ($arg eq "-quiet") {
@@ -226,7 +226,7 @@ if ($count > 1) {
 	}
 }
 
-if ($interactive == 1 && $count > 1) {
+if ($interactive eq "true" && $count > 1) {
   print "[ERROR] Cannot specify -i and -count > 1 together\n";
   exit 1
 }
@@ -715,7 +715,7 @@ sub run_jobs {
                 	$all_plusargs .= expand($plusargs[$i]);
                		$all_plusargs .= " ";
                 }
-                
+              
 			    for ($i=0; $i<=$#global_plusargs; $i++) {
 			    	$val = expand($global_plusargs[$i]);
 			    	$all_plusargs .= $val;
@@ -742,6 +742,11 @@ sub run_jobs {
 	                } elsif (-f "${SIM_DIR}/tests/${testname}.f") {
 	                	print $fh "-f \${SIM_DIR_A}/tests/${test}.f\n";
 	                }
+
+				    for ($i=0; $i<=$#global_plusargs; $i++) {
+				    	$val = expand($global_plusargs[$i]);
+				    	print $fh "$val\n";
+	   	 			}
                 
 	                close($fh);
 	                

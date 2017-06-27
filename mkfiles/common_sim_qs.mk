@@ -73,11 +73,14 @@ CC:=$(GCC_INSTALL)/bin/gcc
 CXX:=$(GCC_INSTALL)/bin/g++
 
 ifeq ($(DEBUG),true)
-	DOFILE_COMMANDS += "log -r /\*;"
 ifeq (true,$(HAVE_VISUALIZER))
 	BUILD_LINK_TARGETS += vopt_opt
 	TOP=$(TOP_MODULE)_opt
+	ifeq (true, $(INTERACTIVE))
+		VSIM_FLAGS += -visualizer=design.bin
+	endif
 else
+	DOFILE_COMMANDS += "log -r /\*;"
 	BUILD_LINK_TARGETS += vopt_dbg
 	TOP=$(TOP_MODULE)_dbg
 endif
@@ -203,6 +206,10 @@ else
 # DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
 endif
 
+ifneq (true,$(INTERACTIVE))
+#	VSIM_FLAGS += -batch -do run.do
+	VSIM_FLAGS += -c -do run.do
+endif
 
 
 ifeq (true,$(GDB_ENABLED))
@@ -221,10 +228,14 @@ run_vsim :
 	$(Q)echo "echo \"SV_SEED: $(SEED)\"" >> run.do
 	$(Q)echo "coverage attribute -name TESTNAME -value $(TESTNAME)_$(SEED)" >> run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
-	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
+	$(Q)if test "x$(INTERACTIVE)" = "xtrue"; then \
+			echo "run $(TIMEOUT)" >> run.do ; \
+		else \
+			echo "run $(TIMEOUT); quit -f" >> run.do ; \
+		fi
 	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
-	$(Q)vsim $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
+	$(Q)vsim $(VSIM_FLAGS) $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 endif
 
