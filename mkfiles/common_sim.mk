@@ -70,19 +70,11 @@ SIMSCRIPTS_TOOLS += $(SIMSCRIPTS_PLUSARGS_TOOLS)
 
 # Include tool-specific makefiles
 MK_INCLUDES += $(foreach tool,$(SIMSCRIPTS_TOOLS),$(SIMSCRIPTS_DIR)/mkfiles/common_tool_$(tool).mk)
+MK_INCLUDES += $(SIMSCRIPTS_DIR)/mkfiles/common_tool_gcc.mk
 
 include $(MK_INCLUDES)
 
 DPIEXT=$(DLLEXT)
-
-CXXFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
-CFLAGS += $(foreach dir, $(SRC_DIRS), -I$(dir))
-
-vpath %.cpp $(SRC_DIRS)
-vpath %.cc $(SRC_DIRS)
-vpath %.S $(SRC_DIRS)
-vpath %.c $(SRC_DIRS)
-
 
 #BUILD_TARGETS += build-pre-compile build-compile build-post-compile build-pre-link
 BUILD_TARGETS += build-post-link	
