@@ -29,7 +29,13 @@ CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
 VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
 GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
 UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
-HAVE_XPROP := $(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
+HAVE_XPROP:=$(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
+HAVE_MODELSIM_ASE:=$(call have_plusarg,tool.modelsim_ase,$(PLUSARGS))
+
+ifeq (true,$(HAVE_MODELSIM_ASE))
+QUESTA_ENABLE_VOPT := false
+QUESTA_ENABLE_VCOVER := false
+endif
 
 ifeq (,$(UCDB_NAME))
 UCDB_NAME:=cov_merge.ucdb
@@ -37,7 +43,7 @@ endif
 
 ifeq (Cygwin,$(uname_o))
 # Ensure we're using a Windows-style path for QUESTA_HOME
-QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME))
+QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME) | sed -e 's%\\%/%g')
 
 DPI_LIB := -Bsymbolic -L $(QUESTA_HOME)/win64 -lmtipli
 endif
@@ -80,6 +86,7 @@ endif # End Not Cygwin
 CC:=$(GCC_INSTALL)/bin/gcc
 CXX:=$(GCC_INSTALL)/bin/g++
 
+ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq ($(DEBUG),true)
 ifeq (true,$(HAVE_VISUALIZER))
 	BUILD_LINK_TARGETS += vopt_opt
@@ -95,6 +102,12 @@ endif
 else
 	TOP=$(TOP_MODULE)_opt
 	BUILD_LINK_TARGETS += vopt_opt
+endif
+else # QUESTA_ENABLE_VOPT=false
+	TOP=$(TOP_MODULE)
+ifeq ($(DEBUG),true)
+	DOFILE_COMMANDS += "log -r /\*;"
+endif
 endif
 
 ifeq (true,$(DYNLINK))
@@ -121,7 +134,9 @@ BUILD_COMPILE_TARGETS += vlog_compile
 
 RUN_TARGETS += run_vsim
 
+ifneq (false,$(QUESTA_ENABLE_VCOVER))
 POST_RUN_TARGETS += cov_merge
+endif
 
 SIMSCRIPTS_SIM_INFO_TARGETS   += questa-sim-info
 SIMSCRIPTS_SIM_OPTION_TARGETS += questa-sim-options
@@ -139,6 +154,9 @@ ifeq (true,$(CODECOV_ENABLED))
 	VOPT_FLAGS += +cover
 	VSIM_FLAGS += -coverage
 endif
+
+VSIM_FLAGS += $(foreach l,$(QUESTA_LIBS),-L $(l))
+VLOG_FLAGS += $(foreach l,$(QUESTA_LIBS),-L $(l))
 
 VOPT_FLAGS += -dpiheader $(TB)_dpi.h
 
@@ -162,10 +180,14 @@ questa-sim-options :
 
 .phony: vopt_opt vopt_dbg vlog_compile
 
+ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
 vlog_build : vopt_opt
 else
 vlog_build : vopt_opt vopt_dbg
+endif
+else # QUESTA_ENABLE_VOPT=false
+vlog_build : vlog_compile
 endif
 
 VOPT_OPT_DEPS += vlog_compile
@@ -184,23 +206,14 @@ vopt_dbg : $(VOPT_DBG_DEPS)
 	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
 
 vlog_compile : $(VLOG_COMPILE_DEPS)
+	$(Q)echo QUESTA_ENABLE_VOPT=$(QUESTA_ENABLE_VOPT)
 	$(Q)rm -rf work
 	$(Q)vlib work
+	$(Q)vmap work $(BUILD_DIR_A)/work
 	$(Q)vlog -sv \
 		$(VLOG_FLAGS) \
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS)
-
-#********************************************************************
-#* Simulation settings
-#********************************************************************
-#ifeq ($(DEBUG),true)
-#	TOP:=$(TOP_MODULE)_dbg
-#	DOFILE_COMMANDS += "log -r /*;"
-#else
-#	TOP:=$(TOP_MODULE)_opt
-#endif
-#	vsim -c -do run.do $(TOP) -qwavedb=+signal \
 
 ifneq (,$(DPI_OBJS_LIBS))
 $(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
@@ -209,17 +222,11 @@ endif
 
 DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
 
-ifeq (true,$(DYNLINK))
-else
-# DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-dpilib $(dpi)$(DPIEXT))
-# DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-ldflags $(dpi)$(DPIEXT))
-endif
-
 ifneq (true,$(INTERACTIVE))
-#	VSIM_FLAGS += -batch -do run.do
 	VSIM_FLAGS += -c -do run.do
 endif
 
+VSIM_FLAGS += -modelsimini $(BUILD_DIR_A)/modelsim.ini
 
 ifeq (true,$(GDB_ENABLED))
 run_vsim :
@@ -228,7 +235,7 @@ run_vsim :
 	$(Q)echo "coverage attribute -name TESTNAME -value $(TESTNAME)_$(SEED)" >> run.do
 	$(Q)echo "coverage save -onexit cov.ucdb" >> run.do
 	$(Q)echo "run $(TIMEOUT); quit -f" >> run.do
-	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
+#	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 	$(Q)gdb --args $(QUESTA_HOME)/linux_x86_64/vsimk $(VSIM_FLAGS) -batch -do run.do $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
 else
@@ -242,7 +249,7 @@ run_vsim :
 		else \
 			echo "run $(TIMEOUT); quit -f" >> run.do ; \
 		fi
-	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
+#	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
 	$(Q)vsim $(VSIM_FLAGS) $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
