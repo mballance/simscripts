@@ -17,6 +17,8 @@ $COMMON_DIR=dirname($SCRIPT_DIR);
 
 BEGIN {
 	my $_script_dir=dirname(dirname(abs_path($0)));
+#	my($_script_dir1)=dirname(abs_path($0));
+#	my($_script_dir)=dirname($_my_script_dir1);
 	unshift(@INC, "$_script_dir/lib");
 }
 
@@ -31,6 +33,8 @@ $SIM_DIR_A=$SIM_DIR;
 
 if ($sysname =~ /CYGWIN/) {
 	$SIM_DIR_A =~ s%^/cygdrive/([a-zA-Z])%$1:%;
+} elsif ($sysname =~ /MSYS/) {
+	$SIM_DIR_A =~ s%^/([a-zA-Z])%$1:/%;
 }
 
 $ENV{SIM_DIR}=$SIM_DIR;
@@ -117,9 +121,14 @@ for ($i=0; $i <= $#ARGV; $i++) {
     } elsif ($arg eq "-count") {
       $i++;
       $count=$ARGV[$i];
-    } elsif ($arg eq "-max_par" || $arg eq "-j") {
-      $i++;
-      $max_par=$ARGV[$i];
+    } elsif ($arg eq "-max_par" || $arg =~ /^-j/) {
+      if ($arg eq "-max_par" || $arg eq "-j") {
+	      $i++;
+	      $max_par=$ARGV[$i];
+      } else {
+          $max_par=$ARGV[$i];
+          $max_par =~ s/-j([0-9]+)/$1/;
+      }
     } elsif ($arg eq "-rundir") {
        $i++;
        $run_root=$ARGV[$i];
@@ -181,6 +190,8 @@ $ENV{RUN_ROOT}=$run_root;
 
 if ($sysname =~ /CYGWIN/) {
 	$run_root =~ s%^/cygdrive/([a-zA-Z])%$1:%;
+} elsif ($sysname =~ /MSYS/) {
+	$run_root =~ s%^/([a-zA-Z])%$1:/%;
 }
 
 if ($builddir eq "") {
@@ -195,7 +206,11 @@ $ENV{BUILD_DIR}=$builddir;
 
 if ($sysname =~ /CYGWIN/) {
 	$builddir =~ s%^/cygdrive/([a-zA-Z])%$1:%;
+} elsif ($sysname =~ /MSYS/) {
+	$builddir =~ s%^/([a-zA-Z])%$1:/%;
 }
+
+print "builddir=$builddir sysname=$sysname\n";
 
 $ENV{BUILD_DIR_A}=$builddir;
 

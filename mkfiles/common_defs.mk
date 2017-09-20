@@ -3,6 +3,8 @@
 COMMON_DEFS_MK := $(lastword $(MAKEFILE_LIST))
 COMMON_DEFS_MK_DIR := $(dir $(COMMON_DEFS_MK))
 
+export MSYS2_ARG_CONV_EXCL=*
+
 include $(COMMON_DEFS_MK_DIR)/plusargs.mk
 
 uname_o=$(shell uname -o)
@@ -10,11 +12,20 @@ ARCH=$(shell uname -m)
 
 ifeq (Cygwin,$(uname_o))
 OS:=Windows
+define native_path
+$(shell echo $(1) | sed -e 's%^/\([a-zA-Z]\)%\1:%')
+endef
 else
 ifeq (Msys,$(uname_o))
 OS:=Windows
+define native_path
+$(shell cygpath -w $(1) | sed -e 's%\\%/%g')
+endef
 else # Not Cygwin and not Msys
 OS:=Linux
+define native_path
+$(1)
+endef
 endif
 endif # uname_o,Cygwin
 

@@ -46,6 +46,13 @@ ifeq (Cygwin,$(uname_o))
 QUESTA_HOME:= $(shell cygpath -w $(QUESTA_HOME) | sed -e 's%\\%/%g')
 
 DPI_LIB := -Bsymbolic -L $(QUESTA_HOME)/win64 -lmtipli
+else
+ifeq (Msys,$(uname_o))
+# Ensure we're using a Windows-style path for QUESTA_HOME
+# QUESTA_HOME:=$(shell cygpath -w $(QUESTA_HOME) | sed -e 's%\\%/%g')
+QUESTA_HOME:=$(shell echo $(QUESTA_HOME) | sed -e 's%\\%/%g' -e 's%^/\([a-zA-Z]\)%\1:/%')
+# QUESTA_BAR := 1
+endif
 endif
 
 # Auto-identify GCC installation
@@ -158,6 +165,9 @@ endif
 VSIM_FLAGS += $(foreach l,$(QUESTA_LIBS),-L $(l))
 VLOG_FLAGS += $(foreach l,$(QUESTA_LIBS),-L $(l))
 
+VLOG_FLAGS += $(foreach d,$(VLOG_DEFINES),+define+$(d))
+VLOG_FLAGS += $(foreach i,$(VLOG_INCLUDES),+incdir+$(call native_path,$(i)))
+
 VOPT_FLAGS += -dpiheader $(TB)_dpi.h
 
 ifeq (true,$(HAVE_XPROP))
@@ -167,6 +177,8 @@ endif
 ifeq (true,$(VALGRIND_ENABLED))
 	VSIM_FLAGS += -valgrind --tool=memcheck
 endif
+
+VLOG_ARGS_PRE += $(VLOG_ARGS_PRE_1) $(VLOG_ARGS_PRE_2) $(VLOG_ARGS_PRE_3) $(VLOG_ARGS_PRE_4) $(VLOG_ARGS_PRE_5)
 
 else # Rules
 
@@ -205,6 +217,7 @@ vopt_opt : $(VOPT_OPT_DEPS)
 vopt_dbg : $(VOPT_DBG_DEPS)
 	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
 
+
 vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)echo QUESTA_ENABLE_VOPT=$(QUESTA_ENABLE_VOPT)
 	$(Q)rm -rf work
@@ -213,7 +226,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)vlog -sv \
 		$(VLOG_FLAGS) \
 		$(QS_VLOG_ARGS) \
-		$(VLOG_ARGS)
+		$(VLOG_ARGS_PRE) $(VLOG_ARGS)
 
 ifneq (,$(DPI_OBJS_LIBS))
 $(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
