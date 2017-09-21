@@ -3,7 +3,7 @@
 COMMON_DEFS_MK := $(lastword $(MAKEFILE_LIST))
 COMMON_DEFS_MK_DIR := $(dir $(COMMON_DEFS_MK))
 
-export MSYS2_ARG_CONV_EXCL=*
+# export MSYS2_ARG_CONV_EXCL=*
 
 include $(COMMON_DEFS_MK_DIR)/plusargs.mk
 
