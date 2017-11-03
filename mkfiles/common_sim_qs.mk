@@ -55,6 +55,10 @@ QUESTA_HOME:=$(shell echo $(QUESTA_HOME) | sed -e 's%\\%/%g' -e 's%^/\([a-zA-Z]\
 endif
 endif
 
+ifneq (,$(QUESTA_MVC_HOME))
+VSIM_FLAGS += -mvchome $(QUESTA_MVC_HOME)
+endif
+
 # Auto-identify GCC installation
 ifeq ($(OS),Windows)
 GCC_VERSION := 4.5.0
@@ -115,6 +119,10 @@ else # QUESTA_ENABLE_VOPT=false
 ifeq ($(DEBUG),true)
 	DOFILE_COMMANDS += "log -r /\*;"
 endif
+endif
+
+ifeq (,$(TB_MODULES))
+TB_MODULES = $(TB)
 endif
 
 ifeq (true,$(DYNLINK))
@@ -212,10 +220,10 @@ ifeq (true,$(HAVE_VISUALIZER))
 endif
 
 vopt_opt : $(VOPT_OPT_DEPS)
-	$(Q)vopt -o $(TB)_opt $(TB) $(VOPT_FLAGS) $(REDIRECT) 
+	$(Q)vopt -o $(TB)_opt $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT) 
 
 vopt_dbg : $(VOPT_DBG_DEPS)
-	$(Q)vopt +acc -o $(TB)_dbg $(TB) $(VOPT_FLAGS) $(REDIRECT)
+	$(Q)vopt +acc -o $(TB)_dbg $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT)
 
 
 vlog_compile : $(VLOG_COMPILE_DEPS)
