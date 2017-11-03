@@ -231,7 +231,7 @@ vlog_compile : $(VLOG_COMPILE_DEPS)
 	$(Q)rm -rf work
 	$(Q)vlib work
 	$(Q)vmap work $(BUILD_DIR_A)/work
-	$(Q)vlog -sv \
+	$(Q)MSYS2_ARG_CONV_EXCL="+incdir+;+define+" vlog -sv \
 		$(VLOG_FLAGS) \
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS_PRE) $(VLOG_ARGS)
