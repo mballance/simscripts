@@ -187,6 +187,7 @@ print "run_root=${run_root}\n";
 
 
 $ENV{RUN_ROOT}=$run_root;
+$ENV{SIM}=$sim;
 
 if ($sysname =~ /CYGWIN/) {
 	$run_root =~ s%^/cygdrive/([a-zA-Z])%$1:%;

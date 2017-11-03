@@ -18,16 +18,20 @@ LD:=$(GCC_ARCH)-ld
 AS:=$(CC)
 endif
 
-vpath %.cpp $(SRC_DIRS)
-vpath %.cc $(SRC_DIRS)
-vpath %.S $(SRC_DIRS)
-vpath %.c $(SRC_DIRS)
 
 CFLAGS += $(foreach d,$(SRC_DIRS),-I$(d))
 CXXFLAGS += $(foreach d,$(SRC_DIRS),-I$(d))
 ASFLAGS += $(foreach d,$(SRC_DIRS),-I$(d))
 
-else
+#CFLAGS += -Wno-error=format= -Wno-error=format-extra-args
+#CXXFLAGS += -Wno-error=format= -Wno-error=format-extra-args
+
+else # Rules
+
+vpath %.cpp $(SRC_DIRS)
+vpath %.cc $(SRC_DIRS)
+vpath %.S $(SRC_DIRS)
+vpath %.c $(SRC_DIRS)
 
 %.o : %.S
 	$(Q)if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
