@@ -757,7 +757,9 @@ sub run_jobs {
 	                	print $fh "-f \${SIM_DIR_A}/tests/${test}\n";
 	                } elsif (-f "${SIM_DIR}/tests/${testname}.f") {
 	                	print $fh "-f \${SIM_DIR_A}/tests/${test}.f\n";
-	                }
+	                } else {
+	                	print $fh "-f $test\n";
+					}
 
 				    for ($i=0; $i<=$#global_plusargs; $i++) {
 				    	$val = expand($global_plusargs[$i]);
