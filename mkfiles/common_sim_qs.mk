@@ -285,7 +285,6 @@ run_vsim :
 		else \
 			echo "run $(TIMEOUT); quit -f" >> run.do ; \
 		fi
-#	$(Q)vmap work $(BUILD_DIR_A)/work $(REDIRECT)
 	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
 	$(Q)vsim $(VSIM_FLAGS) $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
