@@ -56,8 +56,8 @@ $(SVF_LIBDIR)/sc_qs/%.so :
 %.o : %.cpp
 	if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
 	$(CXX) -c -o $@ $(CXXFLAGS) $^	
-	
-%.o : %.C
+
+%.o : %.S
 	if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
 	$(AS) -c -o $@ $(ASFLAGS) $^	
 

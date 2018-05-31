@@ -34,7 +34,6 @@ CXX:=$(GCC_INSTALL)/bin/g++
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq ($(DEBUG),true)
 ifeq (true,$(HAVE_VISUALIZER))
-#	BUILD_LINK_TARGETS += vopt_opt
 	TOP=$(TOP_MODULE)_opt
 	ifeq (true, $(INTERACTIVE))
 		VSIM_FLAGS += -visualizer=design.bin
@@ -46,7 +45,6 @@ else
 endif
 else
 	TOP=$(TOP_MODULE)_opt
-#	BUILD_LINK_TARGETS += vopt_opt
 endif
 else # QUESTA_ENABLE_VOPT=false
 	TOP=$(TOP_MODULE)
@@ -81,7 +79,7 @@ VSIM_FLAGS += -sv_seed $(SEED)
 
 BUILD_COMPILE_TARGETS += velhvl.build
 
-RUN_TARGETS += run_vsim
+RUN_TARGETS += run_vel
 
 ifneq (false,$(QUESTA_ENABLE_VCOVER))
 POST_RUN_TARGETS += cov_merge
@@ -141,6 +139,22 @@ VLOG_ARGS_HDL += -f $(SIM_DIR_A)/scripts/vlog_hdl.f
 endif
 endif
 
+ifeq (,$(VLOG_ARGS_HVL))
+ifneq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM)_hvl.f))
+VLOG_ARGS_HVL += -f $(SIM_DIR_A)/scripts/vlog_$(SIM)_hvl.f
+else
+VLOG_ARGS_HVL += -f $(SIM_DIR_A)/scripts/vlog_hvl.f
+endif
+endif
+
+ifeq (,$(VLOG_ARGS_HDL_HVL))
+ifneq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM)_hdl_hvl.f))
+VLOG_ARGS_HDL_HVL += -f $(SIM_DIR_A)/scripts/vlog_$(SIM)_hdl_hvl.f
+else
+VLOG_ARGS_HDL_HVL += -f $(SIM_DIR_A)/scripts/vlog_hdl_hvl.f
+endif
+endif
+
 else # Rules
 
 vel-sim-info :
@@ -151,14 +165,13 @@ vel-sim-options :
 #	@echo "  +tool.questa.codecov      - Enables collection of code coverage"
 #	@echo "  +tool.questa.ucdb=<name>  - Specifies the name of the merged UCDB file"
 
-.phony: vopt_opt vopt_dbg vlog_compile
-
-VOPT_OPT_DEPS += vlog_compile
-VOPT_DBG_DEPS += vlog_compile
-
 velhvl.build : velcomp.build
 	$(Q)echo "velhvl.build"
-	$(Q)velhvl -cppinstall 4.5.0	
+	$(Q)vlog -sv \
+		$(VLOG_FLAGS) \
+		$(VEL_VLOG_FLAGS) \
+		$(VLOG_ARGS_PRE) $(VLOG_ARGS_HVL)
+	$(Q)MGC_HOME=$(QUESTA_HOME) velhvl -cppinstall 4.5.0
 	$(Q)touch $@
 
 velcomp.build : velanalyze.build
@@ -166,22 +179,18 @@ velcomp.build : velanalyze.build
 	$(Q)velcomp $(foreach top,$(TB_MODULES_HDL),-top $(top))
 	$(Q)touch $@
 
-vopt_opt : $(VOPT_OPT_DEPS)
-	$(Q)vopt -o $(TB)_opt $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT) 
-
-vopt_dbg : $(VOPT_DBG_DEPS)
-	$(Q)vopt +acc -o $(TB)_dbg $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT)
-
-
-velanalyze.build : $(VLOG_COMPILE_DEPS)
+velanalyze.build : $(VLOG_COMPILE_DEPS) $(SIM_DIR)/scripts/veloce.config
 	$(Q)cp $(SIM_DIR)/scripts/veloce.config .
 	$(Q)rm -rf work
-	$(Q)vellib work
-	$(Q)velmap work work
+#	$(Q)vellib work
+#	$(Q)velmap work work
 	$(Q)velanalyze -sv \
 		$(VLOG_FLAGS) \
 		$(VEL_VLOG_ARGS) \
-		$(VLOG_ARGS_PRE) $(VLOG_ARGS_HDL)
+		$(VLOG_ARGS_PRE) $(VLOG_ARGS_HDL) -mfcu +define+VELOCE_SLA +define+VELOCE
 	$(Q)touch $@
+
+run_vel :
+	$(Q)echo "TODO: run Veloce"
 
 endif
