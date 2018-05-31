@@ -12,6 +12,7 @@
 #*
 #* Plusargs
 #* +tool.infact.ini=<path>
+#* +tool.infact.sdm.start    -- 
 #* +tool.infact.sdm.monitor  -- launch the SDM monitor GUI
 #********************************************************************
 ifneq (1,$(RULES))
@@ -43,6 +44,8 @@ SIMSCRIPTS_TOOL_OPTIONS_TARGETS += infact-tool-options
 
 VLOG_DEFINES += INFACT
 
+# SRC_DIRS += $(foreach proj,$(INFACT_SRC_PROJECTS),$(notdir $(INFACT_BUILDDIR_PROJECTS)/
+
 else
 
 infact-tool-info :
@@ -59,6 +62,7 @@ infact-build-nonimport-projects : $(INFACT_IMPORT_TARGETS)
 			proj_name=`basename $$proj`; \
 			rm -rf $$proj_name ; \
 			cp -r $$proj . ; \
+			rm -f `find $$proj_name -name '*.cpp' ; find $$proj_name -name '*.h'`; \
 			echo "Generating project $$proj_name"; \
 			infact cmd genproject -rebuild $$proj_name ; \
 		done \
