@@ -122,7 +122,11 @@ endif
 endif
 
 ifeq (,$(TB_MODULES))
+ifneq (,$(TB_MODULES_HDL))
+TB_MODULES = $(TB_MODULES_HDL) $(TB_MODULES_HVL)
+else
 TB_MODULES = $(TB)
+endif
 endif
 
 ifeq (true,$(DYNLINK))
