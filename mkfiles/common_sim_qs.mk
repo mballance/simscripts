@@ -157,8 +157,8 @@ SIMSCRIPTS_SIM_INFO_TARGETS   += questa-sim-info
 SIMSCRIPTS_SIM_OPTION_TARGETS += questa-sim-options
 
 ifneq (,$(DPI_OBJS_LIBS))
-DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
-LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
+# DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
+# LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
 endif
 
 ifeq ($(OS),Windows)
@@ -286,8 +286,10 @@ run_vsim :
 			echo "run $(TIMEOUT); quit -f" >> run.do ; \
 		fi
 	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
+	echo "DPI_LIBRARIES = $(DPI_LIBRARIES)"
 	$(Q)vsim $(VSIM_FLAGS) $(TOP) -l simx.log \
-		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) $(REDIRECT)
+		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) \
+		$(foreach lib,$(DPI_LIBRARIES),-sv_lib $(lib)) $(REDIRECT)
 endif
 
 UCDB_FILES := $(foreach	test,$(call get_plusarg,TEST,$(PLUSARGS)),$(RUN_ROOT)/$(test)/cov.ucdb)
