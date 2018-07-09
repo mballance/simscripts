@@ -15,6 +15,7 @@ CC:=$(GCC_ARCH)-gcc
 CXX:=$(GCC_ARCH)-g++
 OBJCOPY:=$(GCC_ARCH)-objcopy
 LD:=$(GCC_ARCH)-ld
+NM:=$(GCC_ARCH)-nm
 AS:=$(CC)
 endif
 
