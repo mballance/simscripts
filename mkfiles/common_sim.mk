@@ -1,4 +1,7 @@
 
+SIMSCRIPTS_MKFILES_DIR := $(dir $(lastword $(MAKEFILE_LIST)))
+SIMSCRIPTS_DIR := $(abspath $(SIMSCRIPTS_MKFILES_DIR)/..)
+
 include $(SIMSCRIPTS_DIR)/mkfiles/plusargs.mk
 
 TOP_MODULE ?= $(TB)

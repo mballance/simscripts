@@ -45,12 +45,12 @@ $ENV{SIM_DIR_A}=$SIM_DIR_A;
 #	exit 1;
 # }
 
-if (! -f "$ENV{SIMSCRIPTS_DIR}/mkfiles/common_defs.mk") {
-  print "[ERROR] simscripts environment incorrectly setup\n";
-  print "Working directory is: ${SIM_DIR}\n";
-  print "SIMSCRIPTS_DIR: $ENV{SIMSCRIPTS_DIR}\n";
-  exit 1
-}
+#if (! -f "$ENV{SIMSCRIPTS_DIR}/mkfiles/common_defs.mk") {
+#  print "[ERROR] simscripts environment incorrectly setup\n";
+#  print "Working directory is: ${SIM_DIR}\n";
+#  print "SIMSCRIPTS_DIR: $ENV{SIMSCRIPTS_DIR}\n";
+#  exit 1
+#}
 
 
 $test="";
