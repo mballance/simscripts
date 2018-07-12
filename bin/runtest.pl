@@ -24,7 +24,7 @@ BEGIN {
 
 require 'argfile_utils.pm';
 
-$ROOTDIR=dirname($COMMON_DIR);
+$PACKAGES_DIR=dirname($COMMON_DIR);
 
 ($sysname,$nodename,$release,$version,$machine) = POSIX::uname();
 
@@ -528,9 +528,24 @@ sub run_test {
 
 sub build {
     my($ret,$all_plusargs,$cmd);
+    my($project_dir) = dirname($PACKAGES_DIR);
+    my($project) = basename($project_dir);
+
+    print("SCRIPT=$SCRIPT\n");
+    print("SCRIPT_DIR=$SCRIPT_DIR\n");
 
     if ($clean == 1) {
       system("rm -rf ${builddir}") && die;
+    }
+
+    # First, build the project 
+    if (-f "$project_dir/scripts/ivpm.mk") {
+      print("** Building packages (this may take some time...)\n");
+      system("make -s -f $project_dir/scripts/ivpm.mk build");
+      print("** Building packages complete\n");
+      
+    } else {
+      print("No ivpm.mk makefile in $project_dir/scripts\n");
     }
     
     for($i=0; $i<=$#testlist; $i++) {
