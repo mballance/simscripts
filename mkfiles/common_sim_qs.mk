@@ -55,6 +55,13 @@ QUESTA_HOME:=$(shell echo $(QUESTA_HOME) | sed -e 's%\\%/%g' -e 's%^/\([a-zA-Z]\
 endif
 endif
 
+#********************************************************************
+#* Capabilities configuration
+#********************************************************************
+VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
+VLOG_FLAGS += +define+HAVE_HDL_CLKGEN
+VLOG_FLAGS += +define+HAVE_UVM
+
 ifneq (,$(QUESTA_MVC_HOME))
 VSIM_FLAGS += -mvchome $(QUESTA_MVC_HOME)
 endif
