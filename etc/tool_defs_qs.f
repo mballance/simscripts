@@ -1,0 +1,3 @@
++define+HAVE_UVM
++define+HAVE_HDL_VIRTUAL_INTERFACE
++define+HAVE_HDL_CLKGEN
