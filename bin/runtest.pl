@@ -541,7 +541,8 @@ sub build {
     # First, build the project 
     if (-f "$project_dir/scripts/ivpm.mk") {
       print("** Building packages (this may take some time...)\n");
-      system("make -s -f $project_dir/scripts/ivpm.mk build");
+      system("make -s -f $project_dir/scripts/ivpm.mk build") 
+      	&& die "** Failed to build packages\n";
       print("** Building packages complete\n");
       
     } else {
