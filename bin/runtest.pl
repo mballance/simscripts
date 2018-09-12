@@ -269,15 +269,18 @@ exit 0;
 
 sub printhelp {
   print "runtest [options]\n";
-  print "    -test <testname>    -- Name of the test to run\n";
-  print "    -count <count>      -- Number of simulations to run\n";
-  print "    -max_par <n>        -- Number of runs to issue in parallel\n";
+  print "    -test <testfile>    -- Path to the test file to run\n";
+  print "    -testlist <file>    -- Path to the testlist file\n";
+  print "    -count <count>      -- Number of simulations to run (single-test mode)\n";
+  print "    -j<n>               -- Number of runs to issue in parallel\n";
   print "    -rundir  <path>     -- Specifies the root of the run directory\n";
-  print "    -builddir <path>   -- Specifies the root of the build directory\n";
+  print "    -builddir <path>    -- Specifies the root of the build directory\n";
   print "    -clean              -- Remove contents of the run directory\n";
   print "    -nobuild            -- Do not automatically build the bench\n";
   print "    -i                  -- Run simulation in GUI mode\n";
   print "    -quiet              -- Suppress console output from simulation\n";
+  print "    -v                  -- Runs in verbose mode\n";
+  print "    -d                  -- Enables debug for simulation\n";
   print "\n";
   print "Example:\n";
   print "    runtest -test foo_test.f\n";
