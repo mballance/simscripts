@@ -297,7 +297,6 @@ run_vsim :
 			echo "run $(TIMEOUT); quit -f" >> run.do ; \
 		fi
 	$(Q)if test -f $(BUILD_DIR_A)/design.bin; then cp $(BUILD_DIR_A)/design.bin .; fi
-	echo "DPI_LIBRARIES = $(DPI_LIBRARIES)"
 	$(Q)vsim $(VSIM_FLAGS) $(TOP) -l simx.log \
 		+TESTNAME=$(TESTNAME) -f sim.f $(DPI_LIB_OPTIONS) \
 		$(foreach lib,$(DPI_LIBRARIES),-sv_lib $(lib)) $(REDIRECT)
