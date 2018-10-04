@@ -191,15 +191,14 @@ class vl_ase:
     while True:
       l = fh.readline()
       if l != "":
-#        print "LINE: " + l
         l = l.strip()
         if l.startswith("// DPI import"):
           l = fh.readline()
-          print "Import: " + l
+#          print "Import: " + l
           self.dpi_funcs.append(self.process_function(False, tokenstream(l)))
         elif l.startswith("// DPI export"):
           l = fh.readline()
-          print "Export: " + l
+#          print "Export: " + l
           self.dpi_funcs.append(self.process_function(True, tokenstream(l)))
       else:
         break
@@ -604,7 +603,6 @@ class vl_ase:
       bfm_register = None
 
       for dpi in self.dpi_funcs:
-        print "dpi.name=" + dpi.name
         if dpi.name.endswith("_register_hdl"):
           bfm_register = dpi
           break
@@ -613,7 +611,6 @@ class vl_ase:
         break
       else:
         bfm_name = bfm_register.name[:-len("_register_hdl")]
-        print "bfm_name=" + bfm_name
 
       bfm_i = bfm(bfm_name)
 
@@ -639,7 +636,6 @@ class vl_ase:
     params = []
 
     name = ts.next()
-    print "type=" + str(ret) + " name=" + name
 
     if ts.next() != "(":
       print "Error: missing ("
