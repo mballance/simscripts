@@ -17,7 +17,8 @@
 #********************************************************************
 ifneq (1,$(RULES))
 
-HAVE_START_SDM:=$(call have_plusarg,tool.infact.sdm.start,$(PLUSARGS))
+HAVE_START_SDM:=$(call have_plusarg,tool.infact.sdm,$(PLUSARGS))
+HAVE_START_SDM_MONITOR:=$(call have_plusarg,tool.infact.sdm.monitor,$(PLUSARGS))
 
 ifeq (true,$(HAVE_START_SDM))
 PRE_RUN_TARGETS += start_sdm
@@ -77,7 +78,7 @@ start_sdm :
 		sleep 1; \
 		cnt=`expr $$cnt + 1`; \
 	done
-	if test "x$(LAUNCH_SDM_MONITOR)" = "xtrue"; then \
+	if test "x$(HAVE_START_SDM_MONITOR)" = "xtrue"; then \
 		nohup infactsdm monitor < /dev/null > infactsdm_monitor.out 2>&1 & \
 	fi
 	cat infactsdm_info.ini

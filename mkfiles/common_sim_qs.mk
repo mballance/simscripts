@@ -23,8 +23,8 @@ ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
-
-HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
+# $(call have_plusarg,tool.visualizer,$(PLUSARGS))
+HAVE_VISUALIZER=true
 CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
 VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
 GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
@@ -106,7 +106,7 @@ CXX:=$(GCC_INSTALL)/bin/g++
 
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq ($(DEBUG),true)
-ifeq (true,$(HAVE_VISUALIZER))
+ifeq ($(HAVE_VISUALIZER),true)
 	BUILD_LINK_TARGETS += vopt_opt
 	TOP=$(TOP_MODULE)_opt
 	ifeq (true, $(INTERACTIVE))
@@ -221,7 +221,7 @@ VOPT_DBG_DEPS += $(DPI_OBJS_LIBS)
 #endif
 
 ifneq (true,$(INTERACTIVE))
-	VSIM_FLAGS += -c -do run.do
+	VSIM_FLAGS += -batch -do run.do
 endif
 
 else # Rules
@@ -237,7 +237,7 @@ questa-sim-options :
 .phony: vopt_opt vopt_dbg vlog_compile
 
 ifneq (false,$(QUESTA_ENABLE_VOPT))
-ifeq (true,$(HAVE_VISUALIZER))
+ifeq ($(HAVE_VISUALIZER),true)
 vlog_build : vopt_opt
 else
 vlog_build : vopt_opt vopt_dbg
@@ -249,7 +249,7 @@ endif
 VOPT_OPT_DEPS += vlog_compile
 VOPT_DBG_DEPS += vlog_compile
 
-ifeq (true,$(HAVE_VISUALIZER))
+ifeq ($(HAVE_VISUALIZER),true)
 	VOPT_FLAGS += +designfile -debug
 	VSIM_FLAGS += -classdebug -uvmcontrol=struct,msglog 
 	VSIM_FLAGS += -qwavedb=+report=class+signal+class+transaction+uvm_schematic+memory=256,2
