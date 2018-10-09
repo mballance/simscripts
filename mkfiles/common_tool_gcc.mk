@@ -27,6 +27,8 @@ ASFLAGS += $(foreach d,$(SRC_DIRS),-I$(d))
 #CFLAGS += -Wno-error=format= -Wno-error=format-extra-args
 #CXXFLAGS += -Wno-error=format= -Wno-error=format-extra-args
 
+LD_REL = $(LD) $(LDFLAGS) -r
+
 else # Rules
 
 vpath %.cpp $(SRC_DIRS)

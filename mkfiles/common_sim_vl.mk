@@ -1,9 +1,9 @@
 #****************************************************************************
 
-#* common_sim_vl-ase.mk
+#* common_sim_vl.mk
 #*
-#* Build and run definitions and rules for Verilator running in 
-#* cosimulation mode
+#* Build and run definitions and rules for Verilator
+#*
 #*
 #****************************************************************************
 
@@ -18,17 +18,19 @@ ifeq (,$(QUESTA_HOME))
 QUESTA_HOME := $(dir $(shell which vsim))
 QUESTA_HOME := $(shell dirname $(QUESTA_HOME))
 endif
-PATH := $(QUESTA_HOME)/gcc-4.7.4-linux/bin:$(PATH)
-export PATH
 
-CXX := $(QUESTA_HOME)/gcc-4.7.4-linux/bin/g++
-CC := $(QUESTA_HOME)/gcc-4.7.4-linux/bin/gcc
-LD := $(LD) -m elf_i386
+HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
+CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
+VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
+GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
+UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
+HAVE_XPROP:=$(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
+HAVE_MODELSIM_ASE:=$(call have_plusarg,tool.modelsim_ase,$(PLUSARGS))
 
-SRC_DIRS += $(QUESTA_HOME)/verilog_src/uvm-1.2/src/dpi
-SRC_DIRS += $(QUESTA_HOME)/include
-CFLAGS += -DQUESTA
-CXXFLAGS += -DQUESTA
+ifeq (true,$(HAVE_MODELSIM_ASE))
+QUESTA_ENABLE_VOPT := false
+QUESTA_ENABLE_VCOVER := false
+endif
 
 ifeq (,$(UCDB_NAME))
 UCDB_NAME:=cov_merge.ucdb
@@ -48,14 +50,8 @@ QUESTA_HOME:=$(shell echo $(QUESTA_HOME) | sed -e 's%\\%/%g' -e 's%^/\([a-zA-Z]\
 endif
 endif
 
-ifeq (,$(VERILATOR_HOME))
-  which_vl:=$(dir $(shell which verilator))
-#  VERILATOR_ROOT:=$(abspath $(which_vl)/../share/verilator)
-  VERILATOR_HOME:=$(abspath $(which_vl)/../share/verilator)
-
-  CXXFLAGS += -I$(VERILATOR_HOME)/include -I$(VERILATOR_HOME)/include/vltstd
-#  export VERILATOR_HOME
-endif
+VERILATOR_INST=/project/tools/verilator/3.920
+#VERILATOR_INST=/project/tools/verilator/v4-dev
 
 CXXFLAGS += -Iobj_dir -ISRC_DIRS 
 CXXFLAGS += -I$(VERILATOR_INST)/share/verilator/include
@@ -137,9 +133,7 @@ else
 endif
 
 VSIM_FLAGS += $(RUN_ARGS)
-VSIM_FLAGS += +OBJ_DIR=$(BUILD_DIR)/obj_dir
 VSIM_FLAGS += -sv_seed $(SEED)
-VSIM_FLAGS += -modelsimini $(BUILD_DIR)/modelsim.ini
 
 RUN_TARGETS += vl_run
 
@@ -150,11 +144,9 @@ RUN_TARGETS += vl_run
 SIMSCRIPTS_SIM_INFO_TARGETS   += questa-sim-info
 SIMSCRIPTS_SIM_OPTION_TARGETS += questa-sim-options
 
-DPI_OBJS_LIBS += uvm_dpi.o
-
 ifneq (,$(DPI_OBJS_LIBS))
-DPI_LIBRARIES += $(BUILD_DIR)/dpi
-LIB_TARGETS += $(BUILD_DIR)/dpi$(DPIEXT)
+# DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
+# LIB_TARGETS += $(BUILD_DIR_A)/dpi$(DPIEXT)
 endif
 
 ifeq ($(OS),Windows)
@@ -194,29 +186,28 @@ VLOG_ARGS_HDL += -f $(SIM_DIR_A)/scripts/vlog_hdl.f
 endif
 endif
 
-ifeq (,$(VLOG_ARGS_HVL))
-ifneq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM)_hvl.f))
-VLOG_ARGS_HVL += -f $(SIM_DIR_A)/scripts/vlog_$(SIM)_hvl.f
-else
-VLOG_ARGS_HVL += -f $(SIM_DIR_A)/scripts/vlog_hvl.f
-endif
-endif
-
 
 DPI_LIB_OPTIONS := -ldflags "$(foreach l,$(DPI_OBJS_LIBS),$(BUILD_DIR_A)/$(l)) $(DPI_SYSLIBS)"
 VOPT_OPT_DEPS += $(DPI_OBJS_LIBS)
 VOPT_DBG_DEPS += $(DPI_OBJS_LIBS)
 
+#ifeq ($(OS),Windows)
+#DPI_LIB_OPTIONS := -ldflags "$(foreach l,$(DPI_OBJS_LIBS),$(BUILD_DIR_A)/$(l)) $(DPI_SYSLIBS)"
+#VOPT_OPT_DEPS += $(DPI_OBJS_LIBS)
+#VOPT_DBG_DEPS += $(DPI_OBJS_LIBS)
+#else # Not Windows
+#
+#ifneq (,$(DPI_OBJS_LIBS))
+#$(BUILD_DIR_A)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
+#	$(Q)$(CXX) -shared -o $@ $(DPI_OBJS_LIBS) $(DPI_SYSLIBS)
+#endif
+#
+#DPI_LIB_OPTIONS := $(foreach dpi,$(DPI_LIBRARIES),-sv_lib $(dpi))
+#endif
+
 ifneq (true,$(INTERACTIVE))
-	VSIM_FLAGS += -batch -do "run 10us; quit -f"
+	VSIM_FLAGS += -c -do run.do
 endif
-
-ifeq (true,$(DEBUG))
-  VSIM_FLAGS += +verilator.debug
-endif
-
-# Add in the vl_ase top
-TB_MODULES_HVL += top_vl_ase
 
 else # Rules
 
@@ -230,60 +221,29 @@ questa-sim-options :
 
 .phony: vopt_opt vopt_dbg vlog_compile
 
-vl_compile : vl_translate.d vl_compile.d vlog_compile
+vl_compile : vl_translate.d vl_compile.d
 
 
 vl_translate.d : $(VERILATOR_DEPS)
-	$(Q)echo "VERILATOR_ROOT=$(VERILATOR_ROOT)"
-	$(Q)verilator --cc --exe -sv -Wno-fatal -MMD \
-		--trace-lxt2 \
-		-CFLAGS "-fPIC -m32" \
-		-LDFLAGS "-shared -m32" \
-		--top-module $(TB_MODULES_HDL) \
+	$(Q)verilator --cc --exe -sv -Wno-fatal -MMD --top-module $(TB_MODULES_HDL) \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) 
-	$(Q)python $(SIMSCRIPTS_DIR)/scripts/vl_ase.py -top $(TB_MODULES_HDL)
-#	$(Q)sed -e 's/^[^:]*: /VERILATOR_DEPS=/' obj_dir/V$(TB_MODULES_HDL)__ver.d > verilator.d
+	$(Q)sed -e 's/^[^:]*: /VERILATOR_DEPS=/' obj_dir/V$(TB_MODULES_HDL)__ver.d > verilator.d
 	$(Q)touch $@
 	
 vl_compile.d : vl_translate.d
-	$(Q)echo "VERILATOR_ROOT=$(VERILATOR_ROOT)"
-	$(Q)$(MAKE) CC=$(CC) CXX=$(CXX) \
-		-C obj_dir -f V$(strip $(TB_MODULES_HDL)).mk \
-		V$(strip $(TB_MODULES_HDL))__ALL.a 
+	$(Q)$(MAKE) -C obj_dir -f V$(TB_MODULES_HDL).mk V$(TB_MODULES_HDL)__ALL.a
 	$(Q)touch $@
-
-vlog_compile : vl_compile.d
-	$(Q)vlib work
-	$(Q)vmap work $(BUILD_DIR)/work
-	$(Q)vmap mtiUvm $(BUILD_DIR)/work
-	$(Q)vlog -sv \
-		+incdir+$(QUESTA_HOME)/verilog_src/uvm-1.2/src \
-		+define+UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR \
-		$(QUESTA_HOME)/verilog_src/uvm-1.2/src/uvm_pkg.sv
-	$(Q)vlog -sv \
-		+define+UVM_OBJECT_DO_NOT_NEED_CONSTRUCTOR \
-		+incdir+$(QUESTA_HOME)/verilog_src/uvm-1.2/src \
-		obj_dir/top_vl_ase.sv \
-		obj_dir/hvl_dpi.c \
-		$(VLOG_ARGS_HVL) 
 	
-vl_link : obj_dir/V$(strip $(TB_MODULES_HDL))$(EXEEXT)
+vl_link : obj_dir/V$(TB_MODULES_HDL)$(EXEEXT)
 
 # Definitely need to relink of we recompiled
 obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS)
-	$(Q)$(MAKE) CC=$(CC) CXX=$(CXX) \
-		VK_USER_OBJS="hdl_dpi.o" \
-		-C obj_dir -f V$(strip $(TB_MODULES_HDL)).mk 
-#	$(Q)cp obj_dir/V$(strip $(TB_MODULES_HDL))$(EXEEXT) \
-#		lib$(strip $(TB_MODULES_HDL))$(DLIBEXT)
+	$(Q)$(MAKE) -C obj_dir -f V$(TB_MODULES_HDL).mk V$(TB_MODULES_HDL)$(EXEEXT) \
+		VK_USER_OBJS=$(foreach l,$(VL_TB_OBJS_LIBS),$(abspath $(l)))
 
 
 vl_run :
-	$(Q)vsim \
-		-l simx.log +TESTNAME=$(TESTNAME) -f sim.f \
-		$(VSIM_FLAGS) \
-		$(foreach lib,$(DPI_LIBRARIES),-sv_lib $(lib)) \
-		$(TB_MODULES_HVL)
+	$(Q)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT)
 	
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
@@ -311,6 +271,18 @@ vopt_dbg : $(VOPT_DBG_DEPS)
 	$(Q)vopt +acc -o $(TB)_dbg $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT)
 
 
+vlog_compile : $(VLOG_COMPILE_DEPS)
+	$(Q)echo QUESTA_ENABLE_VOPT=$(QUESTA_ENABLE_VOPT)
+	$(Q)rm -rf work
+	$(Q)vlib work
+	$(Q)vmap work $(BUILD_DIR_A)/work
+	$(Q)MSYS2_ARG_CONV_EXCL="+incdir+;+define+" vlog -sv \
+		$(VLOG_FLAGS) \
+		$(QS_VLOG_ARGS) \
+		$(VLOG_ARGS_PRE) $(VLOG_ARGS)
+
+
+VSIM_FLAGS += -modelsimini $(BUILD_DIR_A)/modelsim.ini
 
 ifeq (true,$(GDB_ENABLED))
 run_vsim :
@@ -340,8 +312,6 @@ run_vsim :
 		$(foreach lib,$(DPI_LIBRARIES),-sv_lib $(lib)) $(REDIRECT)
 endif
 
-$(BUILD_DIR)/dpi$(DPIEXT) : $(DPI_OBJS_LIBS)
-	$(Q)$(CXX) -shared -o $@ $(DPI_OBJS_LIBS) $(DPI_SYSLIBS)
 	
 endif # Rules
 
