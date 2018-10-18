@@ -1,3 +1,4 @@
 name=simscripts
 version=0.0.1
+rootvar=SIMSCRIPTS_DIR
 
