@@ -71,7 +71,7 @@ class dpi_func:
     proto += prefix + name + "("
     for i in range(len(self.params)):
       proto += self.params[i].typename.tostr() + " "
-      proto += self.params[i].name
+      proto += str(self.params[i].name)
       if i+1 < len(self.params):
         proto += ", "
     proto += ")"
@@ -90,7 +90,7 @@ class dpi_func:
     proto += "(*" + prefix + name + ")("
     for i in range(len(self.params)):
       proto += self.params[i].typename.tostr() + " "
-      proto += self.params[i].name
+      proto += str(self.params[i].name)
       if i+1 < len(self.params):
         proto += ", "
     proto += ")"
@@ -273,6 +273,8 @@ class vl_ase:
     fh.write("\n")
     fh.write("// Handle to the HDL API to be called from the HVL\n")
     fh.write("static hvl_hdl_api_t *hvl_hdl_api = 0;\n")
+    fh.write("static int in_eval = 0;\n")
+    fh.write("static int n_inbound_calls = 0;\n")
 
     # Implement the HVL-side API for each BFM
     for bfm_i in self.bfms:
@@ -293,6 +295,9 @@ class vl_ase:
         #* that will set the correct package scope before calling
         if dpi.is_export:
           fh.write(dpi.prototype(True, "", True) + " {\n")
+          fh.write("  if (!in_eval) {\n")
+          fh.write("    n_inbound_calls++;\n")
+          fh.write("  }\n")
           if dpi.is_void == False:
             fh.write("  return hvl_hdl_api->" + dpi.call(False) + ";\n")
           else:
@@ -382,8 +387,11 @@ class vl_ase:
     fh.write("  return 0;\n")
     fh.write("}\n")
     fh.write("\n")
-    fh.write("void vl_ase_eval(void) {\n")
+    fh.write("int vl_ase_eval(void) {\n")
+    fh.write("  in_eval = 1;\n")
     fh.write("  hvl_hdl_api->eval();\n")
+    fh.write("  in_eval = 0;\n")
+    fh.write("  return 0;\n")
     fh.write("}\n")
     fh.write("// HVL-side shutdown\n")
     fh.write("void vl_ase_close(void) {\n")
@@ -394,6 +402,13 @@ class vl_ase:
     fh.write("    fprintf(stdout, \"hvl_hdl_api is null\\n\");\n")
     fh.write("  }\n")
     fh.write("}\n")
+    fh.write("\n")
+    fh.write("  int vl_ase_inbound_calls(void) {\n")
+    fh.write("    int ret = n_inbound_calls;\n")
+    fh.write("    fprintf(stdout, \"vl_ase_inbound_calls: %d\\n\", ret);\n")
+    fh.write("    n_inbound_calls = 0;\n")
+    fh.write("    return ret;\n")
+    fh.write("  }\n")
     fh.write("\n")
     fh.close()
   
@@ -414,6 +429,12 @@ class vl_ase:
     fh.write("\n")
     fh.write("// Handle to the HVL API to be called from the HDL\n")
     fh.write("static hdl_hvl_api_t *hdl_hvl_api = 0;\n")
+    fh.write("static bool in_eval = false;\n")
+    fh.write("\n")
+    fh.write("static V" + self.top + " *top = 0;\n")
+    fh.write("static VerilatedLxt2C *tfp = 0;\n")
+    fh.write("static uint64_t        timestamp = 0;\n")
+    fh.write("\n")
 
     # Register the wrapper functions that will be called
     for bfm_i in self.bfms:
@@ -442,8 +463,15 @@ class vl_ase:
           fh.write("  Verilated::dpiScope(prv_" + bfm_name + "_id_scope_map.find(id)->second);\n")
           if dpi.is_void:
             fh.write("  " + dpi.call(False) + ";\n")
+            fh.write("  if (!in_eval) {\n")
+            fh.write("    top->eval();\n")
+            fh.write("  }\n")
           else:
-            fh.write("  return " + dpi.call(False) + ";\n")
+            fh.write("  int ret = " + dpi.call(False) + ";\n")
+            fh.write("  if (!in_eval) {\n")
+            fh.write("    top->eval();\n")
+            fh.write("  }\n")
+            fh.write("  return ret;}\n")
           fh.write("  fprintf(stdout, \"<-- " + dpi.name + "\\n\");\n")
           fh.write("}\n")
         else:
@@ -456,27 +484,33 @@ class vl_ase:
           fh.write("}\n")
 
     fh.write("\n")
-    fh.write("static V" + self.top + " *top = 0;\n")
-    fh.write("static VerilatedLxt2C *tfp = 0;\n")
-    fh.write("static uint64_t        timestamp = 0;\n")
+    fh.write("double sc_time_stamp() {\n")
+    fh.write("  return timestamp;\n")
+    fh.write("}\n")
     fh.write("\n")
 
     # Implement the evaluation function
     fh.write("static void vl_ase_hdl_eval(void) {\n")
-    fh.write("  top->clk = 1;\n");
-    fh.write("  top->eval();\n")
-    fh.write("  timestamp += 5;\n")
+    fh.write("  fprintf(stdout, \"--> vl_ase_hdl_eval() t=%lld\\n\", timestamp);\n")
+    fh.write("  in_eval = true;\n")
+#    fh.write("  timestamp += 5;\n")
+    fh.write("  top->clock = 1;\n");
+    fh.write("  top->eval();\n") # This eval could be optional
     fh.write("  if (tfp) {\n")
-#    fh.write("    fprintf(stdout, \"dump(): %d\\n\", (int)timestamp);\n")
     fh.write("    tfp->dump(timestamp);\n")
     fh.write("  }\n")
-    fh.write("  top->clk = 0;\n");
-    fh.write("  top->eval();\n")
     fh.write("  timestamp += 5;\n")
+    fh.write("  top->clock = 0;\n");
+    fh.write("  top->eval();\n")
     fh.write("  if (tfp) {\n")
-#    fh.write("    fprintf(stdout, \"dump(): %d\\n\", (int)timestamp);\n")
     fh.write("    tfp->dump(timestamp);\n")
     fh.write("  }\n")
+    fh.write("  timestamp += 5;\n")
+    fh.write("  top->clock = 1;\n");
+    fh.write("  top->eval();\n")
+#    fh.write("  timestamp += 5;\n")
+    fh.write("  in_eval = false;\n")
+    fh.write("  fprintf(stdout, \"<-- vl_ase_hdl_eval() t=%lld\\n\", timestamp);\n")
     fh.write("}\n")
     fh.write("\n")
     fh.write("static void vl_ase_hdl_close(void) {\n")
@@ -554,6 +588,7 @@ class vl_ase:
     fh.write("  import \"DPI-C\" context function int unsigned vl_ase_init(string obj_dir);\n")
     fh.write("  import \"DPI-C\" context task vl_ase_eval();\n")
     fh.write("  import \"DPI-C\" context function void vl_ase_close();\n")
+    fh.write("  import \"DPI-C\" context function int vl_ase_inbound_calls();\n")
     fh.write("\n")
     fh.write("  reg init = 0;\n")
     fh.write("\n")
@@ -574,7 +609,14 @@ class vl_ase:
     fh.write("      if (init == 0) begin\n")
     fh.write("        init <= 1;\n")
     fh.write("      end\n")
+    fh.write("      $display(\"--> vl_ase_eval() t=%0t\", $time);\n");
     fh.write("      vl_ase_eval();\n")
+    fh.write("      $display(\"<-- vl_ase_eval() t=%0t\", $time);\n");
+    fh.write("      $display(\"--> run delta cycles\");\n");
+    fh.write("      do begin\n")
+    fh.write("        #0;\n")
+    fh.write("      end while (vl_ase_inbound_calls() != 0);\n")
+    fh.write("      $display(\"<-- run delta cycles\");\n");
     fh.write("      #10ns;\n")
     fh.write("    end\n")
     fh.write("  end\n")
@@ -642,7 +684,7 @@ class vl_ase:
 
     while True:
       print "Param Parse Begin: " + str(ts.peek())
-      if ts.peek() == ")" or ts.peek() == None:
+      if ts.peek() == ")" or ts.peek() == ");" or ts.peek() == None:
         break
 
       ptype = self.parse_type(ts)
