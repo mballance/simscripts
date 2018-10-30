@@ -38,10 +38,15 @@ vpath %.c $(SRC_DIRS)
 
 %.o : %.S
 	$(Q)if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
-	$(AS) -c $(ASFLAGS) -o $@ $^
+	$(Q)$(AS) -c $(ASFLAGS) -o $@ $^
 	
 %.o : %.c
 	$(Q)if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
-	$(CC) -c $(CFLAGS) -o $@ $^
+	$(Q)$(CC) -c $(CFLAGS) -o $@ $(filter %.c,$^)
+	
+%.o : %.cpp
+	$(Q)if test ! -d `dirname $@`; then mkdir -p `dirname $@`; fi
+	$(Q)echo "Deps: $^"
+	$(Q)$(CXX) -c $(CXXFLAGS) -o $@ $(filter %.cpp,$^)
 
 endif

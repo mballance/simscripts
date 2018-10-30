@@ -32,6 +32,15 @@ QUESTA_ENABLE_VOPT := false
 QUESTA_ENABLE_VCOVER := false
 endif
 
+ifeq (,$(VERILATOR_HOME))
+  which_vl:=$(dir $(shell which verilator))
+#  VERILATOR_ROOT:=$(abspath $(which_vl)/../share/verilator)
+  VERILATOR_HOME:=$(abspath $(which_vl)/../share/verilator)
+
+  CXXFLAGS += -I$(VERILATOR_HOME)/include -I$(VERILATOR_HOME)/include/vltstd
+#  export VERILATOR_HOME
+endif
+
 ifeq (,$(UCDB_NAME))
 UCDB_NAME:=cov_merge.ucdb
 endif
@@ -226,6 +235,7 @@ vl_compile : vl_translate.d vl_compile.d
 
 vl_translate.d : $(VERILATOR_DEPS)
 	$(Q)verilator --cc --exe -sv -Wno-fatal -MMD --top-module $(TB_MODULES_HDL) \
+		--trace-lxt2 \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) 
 	$(Q)sed -e 's/^[^:]*: /VERILATOR_DEPS=/' obj_dir/V$(TB_MODULES_HDL)__ver.d > verilator.d
 	$(Q)touch $@
@@ -239,11 +249,13 @@ vl_link : obj_dir/V$(TB_MODULES_HDL)$(EXEEXT)
 # Definitely need to relink of we recompiled
 obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS)
 	$(Q)$(MAKE) -C obj_dir -f V$(TB_MODULES_HDL).mk V$(TB_MODULES_HDL)$(EXEEXT) \
-		VK_USER_OBJS=$(foreach l,$(VL_TB_OBJS_LIBS),$(abspath $(l)))
+		VK_USER_OBJS="$(foreach l,$(VL_TB_OBJS_LIBS),$(abspath $(l)))" \
+		VM_USER_LDLIBS="-lz -lpthread"
 
 
 vl_run :
-	$(Q)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT)
+	$(Q)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
+	  +TESTNAME=$(TESTNAME) -f sim.f
 	
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
