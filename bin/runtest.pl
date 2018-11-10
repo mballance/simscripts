@@ -641,6 +641,10 @@ sub pre_run {
 sub post_run {
     my($ret,$all_plusargs);
     my($testname, $testleaf);
+    my($n_passed) = 0;
+    my($n_failed) = 0;
+    my($n_unknown) = 0;
+    my($n_run) = 0;
     
     $all_plusargs="";
     for ($i=0; $i<=$#plusargs; $i++) {
@@ -685,6 +689,38 @@ sub post_run {
     }
     close(LOG);
     close(CP);
+   
+    # Produce a summary log 
+    for ($i=0; $i<=$#testlist; $i++) {
+    	my($test_status) = $run_root;
+    	my($line);
+    	$testname = basename($testlist[$i]);
+    	
+    	$testname =~ s/\.f//g;
+		$testname = sprintf("%s_%04d", $testname, ($i+1));
+		$test_status .= "/$testname/test.status";
+		
+		open(my $fh, "<", $test_status) or die "Failed to open $test_status";
+
+		$n_run++;	
+		$line = <$fh>;
+		if ($line =~ /^PASSED:/) {
+			$n_passed++;
+		} elsif ($line =~ /^FAILED:/) {
+			$n_failed++;
+		} else {
+			$n_unknown++;
+		}
+		
+		close($fh);
+    }
+
+    print "#*********************************************************************\n";
+    print "# PASSED:  $n_passed\n";
+    print "# FAILED:  $n_failed\n";
+    print "# UNKNOWN: $n_unknown\n";
+    print "# TOTAL:   $n_run\n";
+    print "#*********************************************************************\n";
 }
 
 sub clean {
@@ -739,7 +775,7 @@ sub run_jobs {
                 my @args = process_argfile(${SIM_DIR}, $test);
                 
                 for ($i=0; $i<=$#args; $i++) {
-                	if ($args[$i] =~ /^+/) {
+                	if ($args[$i] =~ /^\+/) {
                 		push(@plusargs, $arg[$i]);
                 	} else {
                 		push(@paths, $arg[$i]);
@@ -814,6 +850,14 @@ sub run_jobs {
                     $result = <$fh>;
                     
                     print "$result";
+                    
+                    if ($result =~ /^PASSED:/) {
+                    	
+                    } elsif ($result =~ /^FAILED:/) {
+                    	
+                    } else {
+                    	
+                    }
 
 					print $st "$result";
                     

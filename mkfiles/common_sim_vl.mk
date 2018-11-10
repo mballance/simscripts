@@ -137,8 +137,9 @@ endif
 
 ifeq (true,$(QUIET))
 VSIM_FLAGS += -nostdout
-REDIRECT:= >/dev/null 2>&1
+REDIRECT:= >simx.log 2>&1
 else
+REDIRECT:=2>&1 | tee simx.log
 endif
 
 VSIM_FLAGS += $(RUN_ARGS)
@@ -255,7 +256,7 @@ obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS)
 
 vl_run :
 	$(Q)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
-	  +TESTNAME=$(TESTNAME) -f sim.f
+	  +TESTNAME=$(TESTNAME) -f sim.f $(REDIRECT)
 	
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
