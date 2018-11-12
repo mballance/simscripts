@@ -716,9 +716,21 @@ sub post_run {
     }
 
     print "#*********************************************************************\n";
-    print "# PASSED:  $n_passed\n";
-    print "# FAILED:  $n_failed\n";
-    print "# UNKNOWN: $n_unknown\n";
+    if ($n_passed > 0 && $n_failed == 0 && $n_unknown == 0) {
+	    printf("# \033[0;32mPASSED:  $n_passed\033[0m\n");
+    } else {
+	    print "# PASSED:  $n_passed\n";
+    }
+    if ($n_failed > 0) {
+    	printf("# \033[0;31mFAILED:  $n_failed\033[0m\n");
+    } else {
+    	print "# FAILED:  $n_failed\n";
+    }
+    if ($n_unknown > 0) {
+	    printf("# \033[0;31mUNKNOWN: $n_unknown\033[0m\n");
+    } else {
+	    print "# UNKNOWN: $n_unknown\n";
+    }
     print "# TOTAL:   $n_run\n";
     print "#*********************************************************************\n";
 }
@@ -848,18 +860,19 @@ sub run_jobs {
 						die "Failed to open test.status";
                     
                     $result = <$fh>;
-                    
-                    print "$result";
+					print $st "$result";
+					chomp($result);
                     
                     if ($result =~ /^PASSED:/) {
-                    	
+                    	$result =~ s/^PASSED://;
+                    	printf("\033[0;32mPASSED:\033\[0m$result\n");
                     } elsif ($result =~ /^FAILED:/) {
-                    	
+                    	$result =~ s/^FAILED://;
+                    	printf("\033[0;31mFAILED:\033\[0m$result\n");
                     } else {
-                    	
+	                    print "$result";
                     }
 
-					print $st "$result";
                     
                     close($fh);
 					close($st);
