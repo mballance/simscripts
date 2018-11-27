@@ -387,7 +387,6 @@ sub read_test_line($) {
 			print "ch=\\\n";
 		}
 		if ($ch eq "\n" && length($line) > 0) {
-			print "ch=\\n last=" . substr($line, length($line)-1, 1) . "\n";
 			if (!(substr($line, length($line)-1, 1) eq "\\")) {
 				last;
 			}
