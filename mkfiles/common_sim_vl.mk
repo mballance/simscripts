@@ -21,7 +21,7 @@ endif
 
 HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
 CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
-VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
+VALGRIND_ENABLED:=$(call have_plusarg,tool.verilator.valgrind,$(PLUSARGS))
 GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
 UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
 HAVE_XPROP:=$(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
@@ -183,7 +183,7 @@ VOPT_FLAGS += -xprop
 endif
 
 ifeq (true,$(VALGRIND_ENABLED))
-	VSIM_FLAGS += -valgrind --tool=memcheck
+	VSIM_FLAGS += -valgrind --tool=memcheck 
 endif
 
 VLOG_ARGS_PRE += $(VLOG_ARGS_PRE_1) $(VLOG_ARGS_PRE_2) $(VLOG_ARGS_PRE_3) $(VLOG_ARGS_PRE_4) $(VLOG_ARGS_PRE_5)
@@ -236,7 +236,7 @@ vl_compile : vl_translate.d vl_compile.d
 
 vl_translate.d : $(VERILATOR_DEPS)
 	$(Q)verilator --cc --exe -sv -Wno-fatal -MMD --top-module $(TB_MODULES_HDL) \
-		--trace-lxt2 \
+		--trace-fst \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) 
 	$(Q)sed -e 's/^[^:]*: /VERILATOR_DEPS=/' obj_dir/V$(TB_MODULES_HDL)__ver.d > verilator.d
 	$(Q)touch $@
@@ -253,10 +253,17 @@ obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS) $(DPI_OBJS
 		VK_USER_OBJS="$(foreach l,$(VL_TB_OBJS_LIBS) $(DPI_OBJS_LIBS),$(abspath $(l)))" \
 		VM_USER_LDLIBS="-lz -lpthread"
 
+ifeq (true,$(VALGRIND_ENABLED))
+  VALGRIND=valgrind --tool=memcheck 
+endif
+
+ifeq (true,$(DEBUG))
+RUN_ARGS += +debug
+endif
 
 vl_run :
-	$(Q)valgrind --tool=memcheck $(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
-	  +TESTNAME=$(TESTNAME) -f sim.f $(REDIRECT)
+	$(Q)$(VALGRIND)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
+	  +TESTNAME=$(TESTNAME) -f sim.f $(RUN_ARGS) $(REDIRECT)
 	
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
