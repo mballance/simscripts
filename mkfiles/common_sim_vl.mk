@@ -70,6 +70,7 @@ CXXFLAGS += -I$(VERILATOR_INST)/share/verilator/include/vltstd
 #* Capabilities configuration
 #********************************************************************
 # VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
+VLOG_FLAGS += +define+HAVE_DPI
 
 ifneq (,$(QUESTA_MVC_HOME))
 VSIM_FLAGS += -mvchome $(QUESTA_MVC_HOME)

@@ -15,6 +15,7 @@
 ifneq (1,$(RULES))
 
 HAVE_UVM := $(call have_plusarg,tool.modelsim.uvm,$(PLUSARGS))
+HAVE_HDL_VIRTUAL_INTERFACE:=$(call have_plusarg,tool.modelsim.hdl_virtual_interface,$(PLUSARGS))
 VALGRIND_ENABLED := $(call have_plusarg,tool.modelsim.valgrind,$(PLUSARGS))
 
 # Take QUESTA_HOME if set. Otherwise, probe from where executables are located
@@ -44,7 +45,10 @@ endif
 #********************************************************************
 #* Capabilities configuration
 #********************************************************************
-VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
+ifeq (true,$(HAVE_HDL_VIRTUAL_INTERFACE))
+  VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
+endif
+VLOG_FLAGS += +define+HAVE_DPI
 VLOG_FLAGS += +define+HAVE_HDL_CLKGEN
 ifeq (true,$(HAVE_UVM)) 
 VLOG_FLAGS += +define+HAVE_UVM
@@ -182,7 +186,7 @@ endif
 
 
 ifneq (true,$(INTERACTIVE))
-	VSIM_FLAGS += -c -do run.do
+	VSIM_FLAGS += -batch -do run.do
 endif
 
 else # Rules
