@@ -387,7 +387,6 @@ sub read_test_line($) {
 			print "ch=\\\n";
 		}
 		if ($ch eq "\n" && length($line) > 0) {
-			print "ch=\\n last=" . substr($line, length($line)-1, 1) . "\n";
 			if (!(substr($line, length($line)-1, 1) eq "\\")) {
 				last;
 			}
@@ -641,6 +640,10 @@ sub pre_run {
 sub post_run {
     my($ret,$all_plusargs);
     my($testname, $testleaf);
+    my($n_passed) = 0;
+    my($n_failed) = 0;
+    my($n_unknown) = 0;
+    my($n_run) = 0;
     
     $all_plusargs="";
     for ($i=0; $i<=$#plusargs; $i++) {
@@ -685,6 +688,50 @@ sub post_run {
     }
     close(LOG);
     close(CP);
+   
+    # Produce a summary log 
+    for ($i=0; $i<=$#testlist; $i++) {
+    	my($test_status) = $run_root;
+    	my($line);
+    	$testname = basename($testlist[$i]);
+    	
+    	$testname =~ s/\.f//g;
+		$testname = sprintf("%s_%04d", $testname, ($i+1));
+		$test_status .= "/$testname/test.status";
+		
+		open(my $fh, "<", $test_status) or die "Failed to open $test_status";
+
+		$n_run++;	
+		$line = <$fh>;
+		if ($line =~ /^PASSED:/) {
+			$n_passed++;
+		} elsif ($line =~ /^FAILED:/) {
+			$n_failed++;
+		} else {
+			$n_unknown++;
+		}
+		
+		close($fh);
+    }
+
+    print "#*********************************************************************\n";
+    if ($n_passed > 0 && $n_failed == 0 && $n_unknown == 0) {
+	    printf("# \033[0;32mPASSED:  $n_passed\033[0m\n");
+    } else {
+	    print "# PASSED:  $n_passed\n";
+    }
+    if ($n_failed > 0) {
+    	printf("# \033[0;31mFAILED:  $n_failed\033[0m\n");
+    } else {
+    	print "# FAILED:  $n_failed\n";
+    }
+    if ($n_unknown > 0) {
+	    printf("# \033[0;31mUNKNOWN: $n_unknown\033[0m\n");
+    } else {
+	    print "# UNKNOWN: $n_unknown\n";
+    }
+    print "# TOTAL:   $n_run\n";
+    print "#*********************************************************************\n";
 }
 
 sub clean {
@@ -739,7 +786,7 @@ sub run_jobs {
                 my @args = process_argfile(${SIM_DIR}, $test);
                 
                 for ($i=0; $i<=$#args; $i++) {
-                	if ($args[$i] =~ /^+/) {
+                	if ($args[$i] =~ /^\+/) {
                 		push(@plusargs, $arg[$i]);
                 	} else {
                 		push(@paths, $arg[$i]);
@@ -812,10 +859,19 @@ sub run_jobs {
 						die "Failed to open test.status";
                     
                     $result = <$fh>;
-                    
-                    print "$result";
-
 					print $st "$result";
+					chomp($result);
+                    
+                    if ($result =~ /^PASSED:/) {
+                    	$result =~ s/^PASSED://;
+                    	printf("\033[0;32mPASSED:\033\[0m$result\n");
+                    } elsif ($result =~ /^FAILED:/) {
+                    	$result =~ s/^FAILED://;
+                    	printf("\033[0;31mFAILED:\033\[0m$result\n");
+                    } else {
+	                    print "$result";
+                    }
+
                     
                     close($fh);
 					close($st);
