@@ -32,6 +32,8 @@ UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
 HAVE_XPROP:=$(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
 HAVE_MODELSIM_ASE:=$(call have_plusarg,tool.modelsim_ase,$(PLUSARGS))
 
+VOPT ?= vopt
+
 ifeq (true,$(HAVE_MODELSIM_ASE))
 QUESTA_ENABLE_VOPT := false
 QUESTA_ENABLE_VCOVER := false
@@ -156,6 +158,7 @@ endif
 VSIM_FLAGS += $(RUN_ARGS)
 VSIM_FLAGS += -sv_seed $(SEED)
 
+
 BUILD_COMPILE_TARGETS += vlog_compile
 
 RUN_TARGETS += run_vsim
@@ -179,7 +182,7 @@ DPI_SYSLIBS += -lstdc++
 endif
 
 ifeq (true,$(CODECOV_ENABLED))
-	VOPT_FLAGS += +cover
+	VOPT_FLAGS += +cover$(VOPT_COVEROPTS)
 	VSIM_FLAGS += -coverage
 endif
 
@@ -256,22 +259,29 @@ ifeq ($(HAVE_VISUALIZER),true)
 endif
 
 vopt_opt : $(VOPT_OPT_DEPS)
-	$(Q)vopt -o $(TB)_opt $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT) 
+	$(Q)$(VOPT) -o $(TB)_opt $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT) 
 
 vopt_dbg : $(VOPT_DBG_DEPS)
-	$(Q)vopt +acc -o $(TB)_dbg $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT)
+	$(Q)$(VOPT) +acc -o $(TB)_dbg $(TB_MODULES) $(VOPT_FLAGS) $(REDIRECT)
 
-
-vlog_compile : $(VLOG_COMPILE_DEPS)
-	$(Q)echo QUESTA_ENABLE_VOPT=$(QUESTA_ENABLE_VOPT)
+work_lib : 
 	$(Q)rm -rf work
 	$(Q)vlib work
 	$(Q)vmap work $(BUILD_DIR_A)/work
+
+vlog_compile : work_lib
+	$(Q)echo "VCOM_ARGS=$(VCOM_ARGS)"
 	$(Q)MSYS2_ARG_CONV_EXCL="+incdir+;+define+" vlog -sv \
 		$(VLOG_FLAGS) \
 		$(QS_VLOG_ARGS) \
 		$(VLOG_ARGS_PRE) $(VLOG_ARGS)
+	$(Q)if test "x$(VCOM_ARGS)" != "x"; then \
+		MSYS2_ARG_CONV_EXCL="+incdir+;+define+" vcom \
+			$(VCOM_FLAGS) $(QS_VCOM_ARGS) $(VCOM_ARGS) ; \
+	fi
 
+vhdl_compile : $(VLOG_COMPILE_DEPS)
+	$(Q)echo "VCOM_ARGS=$(VCOM_ARGS)"
 
 VSIM_FLAGS += -modelsimini $(BUILD_DIR_A)/modelsim.ini
 
