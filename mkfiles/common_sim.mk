@@ -97,6 +97,16 @@ VLOG_ARGS += -f $(SIM_DIR_A)/scripts/vlog_$(SIM).f
 endif
 endif
 
+ifeq (,$(VCOM_ARGS))
+ifneq (,$(wildcard $(SIM_DIR)/scripts/vhdl_$(SIM).f))
+VCOM_ARGS += -f $(SIM_DIR_A)/scripts/vhdl_$(SIM).f
+else
+ifneq (,$(wildcard $(SIM_DIR)/scripts/vhdl.f))
+VCOM_ARGS += -f $(SIM_DIR_A)/scripts/vhdl.f
+endif
+endif
+endif
+
 
 LD_LIBRARY_PATH := $(BUILD_DIR)/libs:$(LD_LIBRARY_PATH)
 

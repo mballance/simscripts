@@ -70,6 +70,7 @@ CXXFLAGS += -I$(VERILATOR_INST)/share/verilator/include/vltstd
 #* Capabilities configuration
 #********************************************************************
 # VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
+VLOG_FLAGS += +define+HAVE_DPI
 
 ifneq (,$(QUESTA_MVC_HOME))
 VSIM_FLAGS += -mvchome $(QUESTA_MVC_HOME)
@@ -183,7 +184,7 @@ VOPT_FLAGS += -xprop
 endif
 
 ifeq (true,$(VALGRIND_ENABLED))
-	VSIM_FLAGS += -valgrind --tool=memcheck
+	VSIM_FLAGS += -valgrind --tool=memcheck 
 endif
 
 VLOG_ARGS_PRE += $(VLOG_ARGS_PRE_1) $(VLOG_ARGS_PRE_2) $(VLOG_ARGS_PRE_3) $(VLOG_ARGS_PRE_4) $(VLOG_ARGS_PRE_5)
@@ -236,7 +237,7 @@ vl_compile : vl_translate.d vl_compile.d
 
 vl_translate.d : $(VERILATOR_DEPS)
 	$(Q)verilator --cc --exe -sv -Wno-fatal -MMD --top-module $(TB_MODULES_HDL) \
-		--trace-lxt2 \
+		--trace-fst \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) 
 	$(Q)sed -e 's/^[^:]*: /VERILATOR_DEPS=/' obj_dir/V$(TB_MODULES_HDL)__ver.d > verilator.d
 	$(Q)touch $@
@@ -254,7 +255,7 @@ obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS) $(DPI_OBJS
 		VM_USER_LDLIBS="-lz -lpthread"
 
 ifeq (true,$(VALGRIND_ENABLED))
-  VALGRIND=valgrind --tool=memcheck
+  VALGRIND=valgrind --tool=memcheck 
 endif
 
 ifeq (true,$(DEBUG))
