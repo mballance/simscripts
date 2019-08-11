@@ -21,7 +21,7 @@ endif
 
 HAVE_VISUALIZER:=$(call have_plusarg,tool.visualizer,$(PLUSARGS))
 CODECOV_ENABLED:=$(call have_plusarg,tool.questa.codecov,$(PLUSARGS))
-VALGRIND_ENABLED:=$(call have_plusarg,tool.questa.valgrind,$(PLUSARGS))
+VALGRIND_ENABLED:=$(call have_plusarg,tool.verilator.valgrind,$(PLUSARGS))
 GDB_ENABLED:=$(call have_plusarg,tool.questa.gdb,$(PLUSARGS))
 UCDB_NAME:=$(call get_plusarg,tool.questa.ucdb,$(PLUSARGS))
 HAVE_XPROP:=$(call have_plusarg,tool.questa.xprop,$(PLUSARGS))
@@ -253,10 +253,17 @@ obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) : vl_compile.d $(VL_TB_OBJS_LIBS) $(DPI_OBJS
 		VK_USER_OBJS="$(foreach l,$(VL_TB_OBJS_LIBS) $(DPI_OBJS_LIBS),$(abspath $(l)))" \
 		VM_USER_LDLIBS="-lz -lpthread"
 
+ifeq (true,$(VALGRIND_ENABLED))
+  VALGRIND=valgrind --tool=memcheck
+endif
+
+ifeq (true,$(DEBUG))
+RUN_ARGS += +debug
+endif
 
 vl_run :
-	$(Q)valgrind --tool=memcheck $(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
-	  +TESTNAME=$(TESTNAME) -f sim.f $(REDIRECT)
+	$(Q)$(VALGRIND)$(BUILD_DIR)/obj_dir/V$(TB_MODULES_HDL)$(EXEEXT) \
+	  +TESTNAME=$(TESTNAME) -f sim.f $(RUN_ARGS) $(REDIRECT)
 	
 ifneq (false,$(QUESTA_ENABLE_VOPT))
 ifeq (true,$(HAVE_VISUALIZER))
