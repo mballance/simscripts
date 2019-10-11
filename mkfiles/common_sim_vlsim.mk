@@ -1,8 +1,7 @@
 #****************************************************************************
-
-#* common_sim_ivl.mk
+#* common_sim_vlsim.mk
 #*
-#* Build and run definitions and rules for Icarus Verilog
+#* Build and run definitions and rules for using the vlsim Verilator wrapper
 #*
 #*
 #****************************************************************************
@@ -26,7 +25,7 @@ ifeq (ms,$(findstring ms,$(TIMEOUT)))
   timeout=$(shell expr $(subst ms,,$(TIMEOUT)) '*' 1000000)
 else
   ifeq (us,$(findstring us,$(TIMEOUT)))
-    timeout=$(shell expr $(subst us,,$(TIMEOUT)) '*' 1000)
+    timeout=$(shell expr $(subst ns,,$(TIMEOUT)) '*' 1000)
   else
     ifeq (ns,$(findstring ns,$(TIMEOUT)))
       timeout=$(shell expr $(subst ns,,$(TIMEOUT)) '*' 1)
@@ -45,12 +44,12 @@ endif
 #********************************************************************
 # VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
 # VLOG_FLAGS += +define+HAVE_DPI
-VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN
+#VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN
 
 # Include the definition of VERILATOR_DEPS 
 -include verilator.d
 
-BUILD_COMPILE_TARGETS += ivl_compile
+BUILD_COMPILE_TARGETS += vlsim_compile
 #BUILD_LINK_TARGETS += vl_link
 
 ifeq (,$(TB_MODULES))
@@ -82,7 +81,7 @@ endif
 VSIM_FLAGS += $(RUN_ARGS)
 VSIM_FLAGS += -sv_seed $(SEED)
 
-RUN_TARGETS += ivl_run
+RUN_TARGETS += vlsim_run
 
 ifneq (,$(DPI_OBJS_LIBS))
 # DPI_LIBRARIES += $(BUILD_DIR_A)/dpi
@@ -100,20 +99,20 @@ ifeq (true,$(CODECOV_ENABLED))
 	VSIM_FLAGS += -coverage
 endif
 
-VLOG_FLAGS += $(foreach d,$(VLOG_DEFINES),-D $(d))
-VLOG_FLAGS += $(foreach i,$(VLOG_INCLUDES),-I $(call native_path,$(i)))
+VLOG_FLAGS += $(foreach d,$(VLOG_DEFINES),+define+$(d))
+VLOG_FLAGS += $(foreach i,$(VLOG_INCLUDES),+define+$(call native_path,$(i)))
 
 VOPT_FLAGS += -dpiheader $(TB)_dpi.h
 
 VLOG_ARGS_PRE += $(VLOG_ARGS_PRE_1) $(VLOG_ARGS_PRE_2) $(VLOG_ARGS_PRE_3) $(VLOG_ARGS_PRE_4) $(VLOG_ARGS_PRE_5)
 
-# ifeq (,$(VLOG_ARGS_HDL))
+ifeq (,$(VLOG_ARGS_HDL))
 ifneq (,$(wildcard $(SIM_DIR)/scripts/vlog_$(SIM)_hdl.f))
 VLOG_ARGS_HDL += -f $(SIM_DIR_A)/scripts/vlog_$(SIM)_hdl.f
 else
 VLOG_ARGS_HDL += -f $(SIM_DIR_A)/scripts/vlog_hdl.f
 endif
-# endif
+endif
 
 
 DPI_LIB_OPTIONS := -ldflags "$(foreach l,$(DPI_OBJS_LIBS),$(BUILD_DIR_A)/$(l)) $(DPI_SYSLIBS)"
@@ -140,33 +139,27 @@ endif
 
 else # Rules
 
-questa-sim-info :
-	@echo "qs - QuestaSim"
-
-questa-sim-options :
-	@echo "Simulator: qs (QuestaSim)"
-	@echo "  +tool.questa.codecov      - Enables collection of code coverage"
-	@echo "  +tool.questa.ucdb=<name>  - Specifies the name of the merged UCDB file"
-
 .phony: vopt_opt vopt_dbg vlog_compile
 
-ivl_compile : 
-	$(Q)iverilog -o simv.vvp -s $(TB_MODULES_HDL) $(VLOG_FLAGS) $(VLOG_ARGS_HDL)
+VLOG_FLAGS += $(foreach clk,$(VLSIM_CLOCKSPEC),-clkspec $(clk))
+
+vlsim_compile : 
+	$(Q)vlsim -sv --trace-fst --top-module $(TB_MODULES_HDL) -Wno-fatal \
+		$(VLOG_FLAGS) $(VLOG_ARGS_HDL)
 	
 ifeq (true,$(VALGRIND_ENABLED))
   VALGRIND=valgrind --tool=memcheck 
 endif
 
 ifeq (true,$(DEBUG))
-RUN_ARGS += +dumpvars
+RUN_ARGS += +vlsim.trace
 endif
 
-ivl_run :
-	$(Q)echo "PYTHONPATH=$(PYTHONPATH)"
-	$(Q)vvp $(foreach l,$(VPI_LIBRARIES),-m $(l)) \
-		$(BUILD_DIR)/simv.vvp \
-		+timeout=$(timeout) \
-		+TESTNAME=$(TESTNAME) -f sim.f $(RUN_ARGS)
+vlsim_run :
+	$(Q)$(BUILD_DIR)/simv \
+		+vlsim.timeout=$(TIMEOUT) \
+		+TESTNAME=$(TESTNAME) \
+		-f sim.f $(RUN_ARGS)
 	
 endif # Rules
 
