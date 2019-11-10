@@ -143,9 +143,10 @@ else # Rules
 
 VLOG_FLAGS += $(foreach clk,$(VLSIM_CLOCKSPEC),-clkspec $(clk))
 
-vlsim_compile : 
+vlsim_compile : $(DPI_OBJS_LIBS)
 	$(Q)vlsim -sv --trace-fst --top-module $(TB_MODULES_HDL) -Wno-fatal \
-		$(VLOG_FLAGS) $(VLOG_ARGS_HDL)
+		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) \
+		$(foreach l,$(DPI_OBJS_LIBS),$(abspath $(l)))
 	
 ifeq (true,$(VALGRIND_ENABLED))
   VALGRIND=valgrind --tool=memcheck 
