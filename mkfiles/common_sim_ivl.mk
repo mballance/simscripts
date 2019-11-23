@@ -45,7 +45,7 @@ endif
 #********************************************************************
 # VLOG_FLAGS += +define+HAVE_HDL_VIRTUAL_INTERFACE
 # VLOG_FLAGS += +define+HAVE_DPI
-VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN
+VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN IVERILOG
 
 # Include the definition of VERILATOR_DEPS 
 -include verilator.d
@@ -73,7 +73,6 @@ endef
 endif
 
 ifeq (true,$(QUIET))
-VSIM_FLAGS += -nostdout
 REDIRECT:= >simx.log 2>&1
 else
 REDIRECT:=2>&1 | tee simx.log
@@ -151,7 +150,7 @@ questa-sim-options :
 .phony: vopt_opt vopt_dbg vlog_compile
 
 ivl_compile : 
-	$(Q)iverilog -o simv.vvp -s $(TB_MODULES_HDL) $(VLOG_FLAGS) $(VLOG_ARGS_HDL)
+	$(Q)iverilog -g2009 -o simv.vvp -s $(TB_MODULES_HDL) $(VLOG_FLAGS) $(VLOG_ARGS_HDL)
 	
 ifeq (true,$(VALGRIND_ENABLED))
   VALGRIND=valgrind --tool=memcheck 
@@ -162,11 +161,11 @@ RUN_ARGS += +dumpvars
 endif
 
 ivl_run :
-	$(Q)echo "PYTHONPATH=$(PYTHONPATH)"
+	$(Q)filelist-flatten -o arguments.txt -f sim.f $(RUN_ARGS)
 	$(Q)vvp $(foreach l,$(VPI_LIBRARIES),-m $(l)) \
 		$(BUILD_DIR)/simv.vvp \
 		+timeout=$(timeout) \
-		+TESTNAME=$(TESTNAME) -f sim.f $(RUN_ARGS)
+		+TESTNAME=$(TESTNAME) -f sim.f `cat arguments.txt` $(REDIRECT)
 	
 endif # Rules
 

@@ -3,6 +3,7 @@
 #********************************************************************
 ifneq (1,$(RULES))
 
+BUILD_PRECOMPILE_TARGETS += gen-cocotb-bfms
 BUILD_COMPILE_TARGETS += build-cocotb-libs
 #USER_DIR=$(BUILD_DIR)/cocotb
 #export USER_DIR
@@ -17,6 +18,9 @@ PYTHONPATH:=$(BUILD_DIR)/cocotb/build/libs/x86_64:$(PYTHONPATH)
 export PYTHONPATH
 
 VLOG_DEFINES += HAVE_COCOTB
+# TODO: Add different files based on simulator capabilities?
+VLOG_ARGS_HDL += $(BUILD_DIR)/cocotb_bfms.v
+COCOTB_BFM_LANGUAGE=vlog
 
 #COCOTB_SIM=icarus
 #export COCOTB_SIM
@@ -26,6 +30,10 @@ else
 build-cocotb-libs :
 	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share` ; \
 		$(MAKE) USER_DIR=$(BUILD_DIR)/cocotb -j1 -f $$COCOTB_SHARE_DIR/makefiles/Makefile.lib
+		
+gen-cocotb-bfms :
+	$(Q)cocotb-bfmgen generate -language $(COCOTB_BFM_LANGUAGE) \
+		$(foreach m,$(COCOTB_BFM_MODULES),-m $(m))
 
 endif
 
