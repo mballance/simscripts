@@ -46,6 +46,8 @@ endif
 # VLOG_FLAGS += +define+HAVE_DPI
 #VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN
 
+SIM_LANGUAGE=systemverilog
+
 # Include the definition of VERILATOR_DEPS 
 -include verilator.d
 
@@ -143,6 +145,10 @@ else # Rules
 
 VLOG_FLAGS += $(foreach clk,$(VLSIM_CLOCKSPEC),-clkspec $(clk))
 
+ifneq (,$(VPI_LIBRARIES))
+	VLOG_FLAGS += --vpi
+endif
+
 vlsim_compile : $(DPI_OBJS_LIBS)
 	$(Q)vlsim -sv --trace-fst --top-module $(TB_MODULES_HDL) -Wno-fatal \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) \
@@ -157,10 +163,12 @@ RUN_ARGS += +vlsim.trace
 endif
 
 vlsim_run :
+	$(Q)filelist-flatten -o arguments.txt -f sim.f $(RUN_ARGS)
 	$(Q)$(BUILD_DIR)/simv \
 		+vlsim.timeout=$(TIMEOUT) \
 		+TESTNAME=$(TESTNAME) \
-		-f sim.f $(RUN_ARGS)
+		$(foreach v,$(VPI_LIBRARIES),+vpi=$(abspath $(v))) \
+		`cat arguments.txt` $(REDIRECT)
 	
 endif # Rules
 

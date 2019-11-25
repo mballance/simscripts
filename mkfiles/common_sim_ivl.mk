@@ -47,6 +47,8 @@ endif
 # VLOG_FLAGS += +define+HAVE_DPI
 VLOG_DEFINES += HAVE_HDL_DUMP HAVE_HDL_CLKGEN IVERILOG
 
+SIM_LANGUAGE=verilog
+
 # Include the definition of VERILATOR_DEPS 
 -include verilator.d
 
