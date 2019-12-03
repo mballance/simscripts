@@ -13,6 +13,14 @@
 ifneq (1,$(RULES))
 
 VALGRIND_ENABLED:=$(call have_plusarg,tool.vl.valgrind,$(PLUSARGS))
+TRACE_VCD:=$(call have_plusarg,tool.vlsim.tracevcd,$(PLUSARGS))
+TRACE_FST:=$(call have_plusarg,tool.vlsim.tracefst,$(PLUSARGS))
+
+ifeq (true,$(TRACE_VCD))
+  TRACE_FLAGS += --trace
+else
+  TRACE_FLAGS += --trace-fst
+endif
 
 VERILATOR_INST=/project/tools/verilator/3.920
 #VERILATOR_INST=/project/tools/verilator/v4-dev
@@ -150,7 +158,7 @@ ifneq (,$(VPI_LIBRARIES))
 endif
 
 vlsim_compile : $(DPI_OBJS_LIBS)
-	$(Q)vlsim -sv --trace-fst --top-module $(TB_MODULES_HDL) -Wno-fatal \
+	$(Q)vlsim -sv $(TRACE_FLAGS) --top-module $(TB_MODULES_HDL) -Wno-fatal \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) \
 		$(foreach l,$(DPI_OBJS_LIBS),$(abspath $(l)))
 	
