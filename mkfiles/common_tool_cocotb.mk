@@ -9,10 +9,14 @@ BUILD_COMPILE_TARGETS += build-cocotb-libs
 #export USER_DIR
 #COCOTB_SHARE_DIR = $(shell /usr/bin/env cocotb-config --share)
 
+COCOTB_DPI_LIBS = libgpi.so libcocotbutils.so libgpilog.so libcocotb.so
+
 VPI_LIBRARIES += $(BUILD_DIR)/cocotb/build/libs/x86_64/cocotb.vpi
-DPI_OBJS_LIBS += $(BUILD_DIR)/cocotb/build/libs/x86_64/libgpi.so
+DPI_OBJS_LIBS += $(foreach l,$(COCOTB_DPI_LIBS), $(BUILD_DIR)/cocotb/build/libs/x86_64/$(l))
 LD_LIBRARY_PATH:=$(BUILD_DIR)/cocotb/build/libs/x86_64:$(LD_LIBRARY_PATH)
 export LD_LIBRARY_PATH
+
+DPI_LDFLAGS += -L$(shell python3-config --prefix)/lib $(shell python3-config --libs)
 
 # Would be nice to not need to do this
 PYTHONPATH:=$(BUILD_DIR)/cocotb/build/libs/x86_64:$(PYTHONPATH)
@@ -38,7 +42,7 @@ endif
 
 else
 
-$(BUILD_DIR)/cocotb/build/libs/x86_64/libgpi.so : build-cocotb-libs
+$(foreach l,$(COCOTB_DPI_LIBS),$(BUILD_DIR)/cocotb/build/libs/x86_64/$(l)) : build-cocotb-libs
 
 build-cocotb-libs :
 	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share` ; \

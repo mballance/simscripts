@@ -159,8 +159,10 @@ endif
 
 vlsim_compile : $(DPI_OBJS_LIBS)
 	$(Q)vlsim -sv $(TRACE_FLAGS) --top-module $(TB_MODULES_HDL) -Wno-fatal \
+		$(foreach l,$(DPI_OBJS_LIBS),-LDFLAGS "-L$(dir $(abspath $(l)))") \
+		$(foreach l,$(DPI_OBJS_LIBS),-LDFLAGS "-l$(subst .so,,$(subst lib,,$(notdir $(l))))") \
+		-LDFLAGS "$(DPI_LDFLAGS)" \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) \
-		$(foreach l,$(DPI_OBJS_LIBS),$(abspath $(l)))
 	
 ifeq (true,$(VALGRIND_ENABLED))
   VALGRIND=valgrind --tool=memcheck 
