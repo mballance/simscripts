@@ -49,7 +49,7 @@ build-cocotb-libs :
 		$(MAKE) USER_DIR=$(BUILD_DIR)/cocotb -j1 -f $$COCOTB_SHARE_DIR/makefiles/Makefile.lib
 		
 gen-cocotb-bfms :
-	$(Q)cocotb-bfmgen generate -language $(COCOTB_BFM_LANGUAGE) \
+	$(Q)cocotb-bfmgen generate --language $(COCOTB_BFM_LANGUAGE) \
 		$(foreach m,$(COCOTB_BFM_MODULES),-m $(m))
 
 endif
