@@ -15,9 +15,18 @@ ifneq (1,$(RULES))
 
 VALGRIND_ENABLED:=$(call have_plusarg,tool.vl.valgrind,$(PLUSARGS))
 CODECOV_EN:=$(call have_plusarg,tool.sim.codecov,$(PLUSARGS))
+TRACE_VCD:=$(call have_plusarg,tool.vlsim.tracevcd,$(PLUSARGS))
+TRACE_FST:=$(call have_plusarg,tool.vlsim.tracefst,$(PLUSARGS))
 
 ifeq (true,$(CODECOV_EN))
   VLOG_FLAGS += --coverage
+endif
+
+
+ifeq (true,$(TRACE_VCD))
+  TRACE_FLAGS += --trace
+else
+  TRACE_FLAGS += --trace-fst
 endif
 
 VERILATOR_INST=/project/tools/verilator/3.920
@@ -155,9 +164,11 @@ ifneq (,$(VPI_LIBRARIES))
 endif
 
 vlsim_compile : $(DPI_OBJS_LIBS)
-	$(Q)vlsim -sv --trace-fst --top-module $(TB_MODULES_HDL) -Wno-fatal \
+	$(Q)vlsim -sv $(TRACE_FLAGS) --top-module $(TB_MODULES_HDL) -Wno-fatal \
+		$(foreach l,$(DPI_OBJS_LIBS),-LDFLAGS "-L$(dir $(abspath $(l)))") \
+		$(foreach l,$(DPI_OBJS_LIBS),-LDFLAGS "-l$(subst .so,,$(subst lib,,$(notdir $(l))))") \
+		-LDFLAGS "$(DPI_LDFLAGS)" \
 		$(VLOG_FLAGS) $(VLOG_ARGS_HDL) \
-		$(foreach l,$(DPI_OBJS_LIBS),$(abspath $(l)))
 	
 ifeq (true,$(VALGRIND_ENABLED))
   VALGRIND=valgrind --tool=memcheck 

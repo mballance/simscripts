@@ -167,7 +167,7 @@ ivl_run :
 	$(Q)$(RUN_ENV_VARS_V)vvp $(foreach l,$(VPI_LIBRARIES),-m $(l)) \
 		$(BUILD_DIR)/simv.vvp \
 		+timeout=$(timeout) \
-		+TESTNAME=$(TESTNAME) -f sim.f `cat arguments.txt` $(REDIRECT)
+		+TESTNAME=$(TESTNAME) `cat arguments.txt` $(REDIRECT)
 	
 endif # Rules
 
