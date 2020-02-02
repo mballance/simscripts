@@ -3,6 +3,7 @@
 #*
 #* Build and run definitions and rules for using the vlsim Verilator wrapper
 #*
+#* +tool.sim.codecov
 #*
 #****************************************************************************
 
@@ -13,6 +14,11 @@
 ifneq (1,$(RULES))
 
 VALGRIND_ENABLED:=$(call have_plusarg,tool.vl.valgrind,$(PLUSARGS))
+CODECOV_EN:=$(call have_plusarg,tool.sim.codecov,$(PLUSARGS))
+
+ifeq (true,$(CODECOV_EN))
+  VLOG_FLAGS += --coverage
+endif
 
 VERILATOR_INST=/project/tools/verilator/3.920
 #VERILATOR_INST=/project/tools/verilator/v4-dev
@@ -74,7 +80,6 @@ endef
 endif
 
 ifeq (true,$(QUIET))
-VSIM_FLAGS += -nostdout
 REDIRECT:= >simx.log 2>&1
 else
 REDIRECT:=2>&1 | tee simx.log
@@ -146,7 +151,7 @@ else # Rules
 VLOG_FLAGS += $(foreach clk,$(VLSIM_CLOCKSPEC),-clkspec $(clk))
 
 ifneq (,$(VPI_LIBRARIES))
-	VLOG_FLAGS += --vpi
+    VLOG_FLAGS += --vpi
 endif
 
 vlsim_compile : $(DPI_OBJS_LIBS)
@@ -164,7 +169,7 @@ endif
 
 vlsim_run :
 	$(Q)filelist-flatten -o arguments.txt -f sim.f $(RUN_ARGS)
-	$(Q)$(BUILD_DIR)/simv \
+	$(Q)$(RUN_ENV_VARS_V)$(BUILD_DIR)/simv \
 		+vlsim.timeout=$(TIMEOUT) \
 		+TESTNAME=$(TESTNAME) \
 		$(foreach v,$(VPI_LIBRARIES),+vpi=$(abspath $(v))) \

@@ -36,6 +36,8 @@ LIBPREF=lib
 SVF_LIBDIR ?= $(BUILD_DIR)/libs
 SVF_OBJDIR ?= $(BUILD_DIR)/objs
 
+RUN_ENV_VARS_V=$(foreach v,$(RUN_ENV_VARS),export $(v);)
+
 ifeq (,$(DEFAULT_SIM))
 SIM:=qs
 else

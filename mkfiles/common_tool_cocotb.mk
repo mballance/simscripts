@@ -1,7 +1,13 @@
 #********************************************************************
 #* common_tool_cocotb.mk
 #********************************************************************
+SIMSCRIPTS_MKFILES_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
+
 ifneq (1,$(RULES))
+
+COCOTB_MODULE:=$(call get_plusarg,cocotb.module,$(PLUSARGS))
+
+RUN_ENV_VARS += MODULE=$(COCOTB_MODULE)
 
 BUILD_PRECOMPILE_TARGETS += gen-cocotb-bfms
 BUILD_COMPILE_TARGETS += build-cocotb-libs
@@ -41,11 +47,11 @@ else
 $(BUILD_DIR)/cocotb/build/libs/x86_64/libgpi.so : build-cocotb-libs
 
 build-cocotb-libs :
-	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share` ; \
-		$(MAKE) USER_DIR=$(BUILD_DIR)/cocotb -j1 -f $$COCOTB_SHARE_DIR/makefiles/Makefile.lib
+	$(Q)$(MAKE) -f $(SIMSCRIPTS_MKFILES_DIR)/cocotb_libs.mk \
+		USER_DIR=$(BUILD_DIR)/cocotb -j1 vpi-libs
 		
 gen-cocotb-bfms :
-	$(Q)cocotb-bfmgen generate -language $(COCOTB_BFM_LANGUAGE) \
+	$(Q)cocotb-bfmgen generate --language $(COCOTB_BFM_LANGUAGE) \
 		$(foreach m,$(COCOTB_BFM_MODULES),-m $(m))
 
 endif

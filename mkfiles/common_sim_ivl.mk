@@ -164,7 +164,7 @@ endif
 
 ivl_run :
 	$(Q)filelist-flatten -o arguments.txt -f sim.f $(RUN_ARGS)
-	$(Q)vvp $(foreach l,$(VPI_LIBRARIES),-m $(l)) \
+	$(Q)$(RUN_ENV_VARS_V)vvp $(foreach l,$(VPI_LIBRARIES),-m $(l)) \
 		$(BUILD_DIR)/simv.vvp \
 		+timeout=$(timeout) \
 		+TESTNAME=$(TESTNAME) -f sim.f `cat arguments.txt` $(REDIRECT)
