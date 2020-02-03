@@ -13,7 +13,7 @@ export USER_DIR
 vpi-libs : cocotb-libs cocotb-vpi-libs
 
 
-include $(COCOTB_SHARE_DIR)/lib/Makefile
+include $(SIMSCRIPTS_BUILD_DIR)/makefiles/Makefile
 
 cocotb-libs : $(COCOTB_LIBS)
 

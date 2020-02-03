@@ -13,7 +13,8 @@ BUILD_PRECOMPILE_TARGETS += gen-cocotb-bfms
 BUILD_COMPILE_TARGETS += build-cocotb-libs
 #USER_DIR=$(BUILD_DIR)/cocotb
 #export USER_DIR
-#COCOTB_SHARE_DIR = $(shell /usr/bin/env cocotb-config --share)
+#COCOTB_SHARE_DIR:=$(shell cocotb-config --share)
+#export COCOTB_SHARE_DIR
 
 COCOTB_DPI_LIBS = libgpi.so libcocotbutils.so libgpilog.so libcocotb.so
 
@@ -50,9 +51,30 @@ else
 
 $(foreach l,$(COCOTB_DPI_LIBS),$(BUILD_DIR)/cocotb/build/libs/x86_64/$(l)) : build-cocotb-libs
 
+#********************************************************************
+#* Build the coctb libraries
+#*
+#* Note: The cocotb makefiles directly reference 'gcc' and 'g++'.
+#*       In order to use Conda, we need to use $(CC) and $(CXX)
+#*       instead. The code below does a little switch-around, 
+#*       copying and modifying the Makefiles from cocotb such that
+#*       they can be used standalone, and so they reference the
+#*       compilers correctly.
+#********************************************************************
 build-cocotb-libs :
+	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share`; \
+                cp -r $$COCOTB_SHARE_DIR/makefiles . ; \
+                cp $$COCOTB_SHARE_DIR/lib/Makefile makefiles
+	$(Q)for file in `find makefiles -type f`; do \
+		sed -i -e 's%include $$(COCOTB_SHARE_DIR)/makefiles%include $$(SIMSCRIPTS_BUILD_DIR)/makefiles%g' \
+                       -e 's%\<gcc\>%$$(CC)%g' \
+                       -e 's%\<g++\>%$$(CXX)%g' \
+                    $$file; \
+            done
 	$(Q)$(MAKE) -f $(SIMSCRIPTS_MKFILES_DIR)/cocotb_libs.mk \
-		USER_DIR=$(BUILD_DIR)/cocotb -j1 vpi-libs
+		USER_DIR=$(BUILD_DIR)/cocotb \
+                SIMSCRIPTS_BUILD_DIR=$(BUILD_DIR) \
+                -j1 vpi-libs
 		
 gen-cocotb-bfms :
 	$(Q)cocotb-bfmgen generate --language $(COCOTB_BFM_LANGUAGE) \
