@@ -696,22 +696,59 @@ sub post_run {
     	$testname = basename($testlist[$i]);
     	
     	$testname =~ s/\.f//g;
-		$testname = sprintf("%s_%04d", $testname, ($i+1));
-		$test_status .= "/$testname/test.status";
+        $testname = sprintf("%s_%04d", $testname, ($i+1));
+        $test_status .= "/$testname/test.status";
 		
-		open(my $fh, "<", $test_status) or die "Failed to open $test_status";
+        open(my $fh, "<", $test_status) or die "Failed to open $test_status";
 
-		$n_run++;	
-		$line = <$fh>;
-		if ($line =~ /^PASSED:/) {
-			$n_passed++;
-		} elsif ($line =~ /^FAILED:/) {
-			$n_failed++;
-		} else {
-			$n_unknown++;
-		}
+        $n_run++;	
+        $line = <$fh>;
+        if ($line =~ /^PASSED:/) {
+            $n_passed++;
+        } elsif ($line =~ /^FAILED:/) {
+            $n_failed++;
+        } else {
+            $n_unknown++;
+        }
+        close($fh);
+    }
+
+    $result_xml="result.xml";
+
+    if ($result_xml ne "") {
+        open(XML, "> ${result_xml}");
+        print XML "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n";
+        print XML "<testsuites id=\"${project}\" name=\"${project}\" tests=\"${n_run}\" failures=\"$n_failed\" time=\"0.001\">\n";
+        print XML "  <testsuite id=\"${project}.${sim}\" name=\"Run with ${sim}\" tests=\"${n_run}\" failures=\"${n_failed}\" time=\"0.001\">\n";
+        for ($i=0; $i<=$#testlist; $i++) {
+            my($test_status) = $run_root;
+            my($line);
+            $testname = basename($testlist[$i]);
+    	
+            $testname =~ s/\.f//g;
+            $testname = sprintf("%s_%04d", $testname, ($i+1));
+            $test_status .= "/$testname/test.status";
 		
-		close($fh);
+            open(my $fh, "<", $test_status) or die "Failed to open $test_status";
+
+            $line = <$fh>;
+            chomp($line);
+            print XML "    <testcase id=\"${project}.${testname}\" name=\"${testname}\" time=\"0.001\">\n";
+            if ($line =~ /^PASSED:/) {
+                $n_passed++;
+            } elsif ($line =~ /^FAILED:/) {
+                $n_failed++;
+                print XML "      <failure message=\"$line\" type=\"FAILURE\">\n";
+                print XML "      </failure>\n";
+            } else {
+                $n_unknown++;
+            }
+            close($fh);
+            print XML "    </testcase>\n";
+        }
+        print XML "  </testsuite>\n";
+        print XML "</testsuites>\n";
+        close(XML);
     }
 
     print "#*********************************************************************\n";
