@@ -10,7 +10,10 @@ SIM ?= icarus
 USER_DIR ?= $(shell pwd)
 export USER_DIR
 
-vpi-libs : cocotb-libs cocotb-vpi-libs
+vpi-libs : pre-run cocotb-libs cocotb-vpi-libs
+
+pre-run :
+	@echo "PRE-RUN: CC=$(CC) CXX=$(CXX)"
 
 
 include $(SIMSCRIPTS_BUILD_DIR)/makefiles/Makefile

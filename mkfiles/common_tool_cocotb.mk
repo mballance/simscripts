@@ -62,6 +62,7 @@ $(foreach l,$(COCOTB_DPI_LIBS),$(BUILD_DIR)/cocotb/build/libs/x86_64/$(l)) : bui
 #*       compilers correctly.
 #********************************************************************
 build-cocotb-libs :
+	$(Q)echo "PRE-BUILD: CC=$(CC) CXX=$(CXX)"
 	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share`; \
                 cp -r $$COCOTB_SHARE_DIR/makefiles . ; \
                 cp $$COCOTB_SHARE_DIR/lib/Makefile makefiles
