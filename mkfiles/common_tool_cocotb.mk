@@ -62,19 +62,8 @@ $(foreach l,$(COCOTB_DPI_LIBS),$(BUILD_DIR)/cocotb/build/libs/x86_64/$(l)) : bui
 #*       compilers correctly.
 #********************************************************************
 build-cocotb-libs :
-	$(Q)echo "PRE-BUILD: CC=$(CC) CXX=$(CXX)"
-	$(Q)COCOTB_SHARE_DIR=`cocotb-config --share`; \
-                cp -r $$COCOTB_SHARE_DIR/makefiles . ; \
-                cp $$COCOTB_SHARE_DIR/lib/Makefile makefiles
-	$(Q)for file in `find makefiles -type f`; do \
-		sed -i -e 's%include $$(COCOTB_SHARE_DIR)/makefiles%include $$(SIMSCRIPTS_BUILD_DIR)/makefiles%g' \
-                       -e 's%\<gcc\>%$$(CC)%g' \
-                       -e 's%\<g\+\+\>%$$(CXX)%g' \
-                    $$file; \
-            done
 	$(Q)$(MAKE) -f $(SIMSCRIPTS_MKFILES_DIR)/cocotb_libs.mk \
 		USER_DIR=$(BUILD_DIR)/cocotb \
-                SIMSCRIPTS_BUILD_DIR=$(BUILD_DIR) \
                 -j1 vpi-libs
 		
 gen-cocotb-bfms :
