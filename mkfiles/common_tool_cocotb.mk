@@ -68,7 +68,7 @@ build-cocotb-libs :
 	$(Q)for file in `find makefiles -type f`; do \
 		sed -i -e 's%include $$(COCOTB_SHARE_DIR)/makefiles%include $$(SIMSCRIPTS_BUILD_DIR)/makefiles%g' \
                        -e 's%\<gcc\>%$$(CC)%g' \
-                       -e 's%\<g++\>%$$(CXX)%g' \
+                       -e 's%\<g\+\+\>%$$(CXX)%g' \
                     $$file; \
             done
 	$(Q)$(MAKE) -f $(SIMSCRIPTS_MKFILES_DIR)/cocotb_libs.mk \
