@@ -8,6 +8,7 @@ ifneq (1,$(RULES))
 COCOTB_MODULE:=$(call get_plusarg,cocotb.module,$(PLUSARGS))
 
 RUN_ENV_VARS += MODULE=$(COCOTB_MODULE)
+RUN_ENV_VARS += COCOTB_SIM=1
 
 BUILD_PRECOMPILE_TARGETS += gen-cocotb-bfms
 BUILD_COMPILE_TARGETS += build-cocotb-libs

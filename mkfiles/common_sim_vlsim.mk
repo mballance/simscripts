@@ -181,6 +181,7 @@ endif
 vlsim_run :
 	$(Q)filelist-flatten -o arguments.txt -f sim.f $(RUN_ARGS)
 	$(Q)$(RUN_ENV_VARS_V)$(BUILD_DIR)/simv \
+		--public-flat-rw \
 		+vlsim.timeout=$(TIMEOUT) \
 		+TESTNAME=$(TESTNAME) \
 		$(foreach v,$(VPI_LIBRARIES),+vpi=$(abspath $(v))) \
