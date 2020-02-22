@@ -10,6 +10,8 @@ include $(COMMON_DEFS_MK_DIR)/plusargs.mk
 uname_o=$(shell uname -o)
 ARCH=$(shell uname -m)
 
+PYTHON_BIN ?= python3
+
 ifeq (Cygwin,$(uname_o))
 OS:=Windows
 define native_path
