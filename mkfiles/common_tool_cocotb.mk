@@ -6,23 +6,28 @@ SIMSCRIPTS_MKFILES_DIR:=$(dir $(lastword $(MAKEFILE_LIST)))
 ifneq (1,$(RULES))
 
 COCOTB_MODULE:=$(call get_plusarg,cocotb.module,$(PLUSARGS))
+COCOTB:=$(shell $(PYTHON_BIN) -m cocotb.config --prefix)
 
 RUN_ENV_VARS += MODULE=$(COCOTB_MODULE)
 RUN_ENV_VARS += COCOTB_SIM=1
 
-BUILD_COMPILE_TARGETS += build-cocotb-libs
+#BUILD_COMPILE_TARGETS += build-cocotb-libs
 
 COCOTB_DPI_LIBS = libgpi.so libcocotbutils.so libgpilog.so libcocotb.so
 
-VPI_LIBRARIES += $(BUILD_DIR)/cocotb/build/libs/x86_64/cocotb.vpi
-DPI_OBJS_LIBS += $(foreach l,$(COCOTB_DPI_LIBS), $(BUILD_DIR)/cocotb/build/libs/x86_64/$(l))
-LD_LIBRARY_PATH:=$(BUILD_DIR)/cocotb/build/libs/x86_64:$(LD_LIBRARY_PATH)
+#LIB_DIR=$(BUILD_DIR)/cocotb/build/libs/x86_64
+LIB_DIR=$(COCOTB)/cocotb/libs/verilator
+
+#VPI_LIBRARIES += $(LIB_DIR)/cocotb.vpi
+VPI_LIBRARIES += $(LIB_DIR)/libvpi.so
+DPI_OBJS_LIBS += $(foreach l,$(COCOTB_DPI_LIBS), $(LIB_DIR)/$(l))
+LD_LIBRARY_PATH:=$(LIB_DIR):$(LD_LIBRARY_PATH)
 export LD_LIBRARY_PATH
 
 DPI_LDFLAGS += -L$(shell python3-config --prefix)/lib $(shell python3-config --libs)
 
 # Would be nice to not need to do this
-PYTHONPATH:=$(BUILD_DIR)/cocotb/build/libs/x86_64:$(PYTHONPATH)
+PYTHONPATH:=$(LIB_DIR):$(PYTHONPATH)
 export PYTHONPATH
 
 VLOG_DEFINES += HAVE_COCOTB

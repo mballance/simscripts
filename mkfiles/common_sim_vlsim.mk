@@ -160,6 +160,7 @@ else # Rules
 VLOG_FLAGS += $(foreach clk,$(VLSIM_CLOCKSPEC),-clkspec $(clk))
 
 ifneq (,$(VPI_LIBRARIES))
+#    VLOG_FLAGS += --vpi --public-flat-rw
     VLOG_FLAGS += --vpi
 endif
 
