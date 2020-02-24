@@ -39,7 +39,7 @@ else
 #********************************************************************
 gen-pybfms :
 	$(Q)$(PYTHON_BIN) -m pybfms generate -l $(PYBFMS_LANGUAGE) \
-		$(foreach m,$(COCOTB_BFM_MODULES),-m $(m))
+		$(foreach m,$(PYBFMS_BFM_MODULES),-m $(m))
 
 endif
 
