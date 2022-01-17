@@ -1,0 +1,5 @@
+package:
+    name: simscripts
+    version: None
+    deps:
+    dev-deps:
