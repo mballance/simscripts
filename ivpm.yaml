@@ -1,5 +1,17 @@
 package:
     name: simscripts
-    version: None
-    deps:
-    dev-deps:
+
+    dep-sets:
+    - name: default
+      deps: []
+
+    - name: default-dev
+      deps: []
+
+    paths:
+      export:
+        lib-dirs:
+          - verilog/rtl
+      project:
+        lib-dirs:
+          - verilog/rtl
